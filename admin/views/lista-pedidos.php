@@ -29,6 +29,7 @@
   <?php if ( empty( $pedidos ) ) : ?>
     <p class="gpi-empty">No se encontraron pedidos.</p>
   <?php else : ?>
+  <div class="gpi-table-wrapper">
   <table class="gpi-table">
     <thead>
       <tr>
@@ -36,6 +37,7 @@
         <th>Solicitante</th>
         <th>Descripción</th>
         <th>Estado</th>
+        <th>Presupuesto</th>
         <th>Fecha</th>
         <th>Acciones</th>
       </tr>
@@ -65,8 +67,21 @@
             </select>
           </div>
         </td>
+        <td>
+          <?php if ( $p->presupuesto > 0 ) : ?>
+            <?php echo esc_html( number_format( $p->presupuesto, 2, ',', '.' ) . ' €' ); ?>
+            <?php if ( $p->pagado ) : ?>
+              <span class="gpi-pagado-badge" title="Pagado">✅</span>
+            <?php endif; ?>
+          <?php else : ?>
+            —
+          <?php endif; ?>
+        </td>
         <td><?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $p->creado_en ) ) ); ?></td>
         <td class="gpi-actions">
+          <button class="button button-small gpi-btn-pagado <?php echo $p->pagado ? 'pagado' : ''; ?>" data-id="<?php echo esc_attr( $p->id ); ?>" title="<?php echo $p->pagado ? 'Marcar como no pagado' : 'Marcar como pagado'; ?>">
+            <?php echo $p->pagado ? '💰' : '🪙'; ?>
+          </button>
           <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-editar-pedido&pedido_id=' . $p->id ) ); ?>" class="button button-small" title="Editar pedido">✏️</a>
           <button class="button button-small gpi-btn-print" data-id="<?php echo esc_attr( $p->id ); ?>" title="Imprimir resguardo">🖨️</button>
           <button class="button button-small gpi-btn-delete" data-id="<?php echo esc_attr( $p->id ); ?>" title="Eliminar">🗑️</button>
@@ -75,6 +90,7 @@
     <?php endforeach; ?>
     </tbody>
   </table>
+  </div>
 
   <!-- Paginación -->
   <?php if ( $pages > 1 ) : ?>

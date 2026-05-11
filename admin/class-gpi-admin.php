@@ -11,6 +11,7 @@ class GPI_Admin {
         add_action( 'wp_ajax_gpi_eliminar_pedido', [ $this, 'ajax_eliminar_pedido' ] );
         add_action( 'wp_ajax_gpi_imprimir_ticket', [ $this, 'ajax_imprimir_ticket' ] );
         add_action( 'wp_ajax_gpi_editar_pedido',   [ $this, 'ajax_editar_pedido' ] );
+        add_action( 'wp_ajax_gpi_toggle_pagado',   [ $this, 'ajax_toggle_pagado' ] );
         add_action( 'admin_post_gpi_save_settings', [ $this, 'save_settings' ] );
     }
 
@@ -100,6 +101,8 @@ class GPI_Admin {
             'solicitante' => sanitize_text_field( wp_unslash( $_POST['solicitante'] ?? '' ) ),
             'descripcion' => sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ?? '' ) ),
             'notas'       => sanitize_textarea_field( wp_unslash( $_POST['notas'] ?? '' ) ),
+            'presupuesto' => floatval( wp_unslash( $_POST['presupuesto'] ?? 0 ) ),
+            'pagado'      => (int) ( wp_unslash( $_POST['pagado'] ?? 0 ) ),
         ] );
         if ( $id ) {
             wp_send_json_success( [ 'id' => $id, 'numero' => $numero, 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );
@@ -118,11 +121,28 @@ class GPI_Admin {
             'solicitante' => sanitize_text_field( wp_unslash( $_POST['solicitante'] ?? '' ) ),
             'descripcion' => sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ?? '' ) ),
             'notas'       => sanitize_textarea_field( wp_unslash( $_POST['notas'] ?? '' ) ),
+            'presupuesto' => floatval( wp_unslash( $_POST['presupuesto'] ?? 0 ) ),
+            'pagado'      => (int) ( wp_unslash( $_POST['pagado'] ?? 0 ) ),
         ] );
         if ( $updated ) {
             wp_send_json_success( [ 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );
         } else {
             wp_send_json_error( 'Error al actualizar el pedido.' );
+        }
+    }
+
+    public function ajax_toggle_pagado() {
+        $this->verify_nonce();
+        $pedido_id = absint( $_POST['pedido_id'] ?? 0 );
+        $pedido    = GPI_Database::get_pedido( $pedido_id );
+        if ( ! $pedido ) {
+            wp_send_json_error( 'Pedido no encontrado.' );
+        }
+        $nuevo = $pedido->pagado ? 0 : 1;
+        if ( GPI_Database::update_pedido( $pedido_id, [ 'pagado' => $nuevo ] ) ) {
+            wp_send_json_success( [ 'pagado' => $nuevo ] );
+        } else {
+            wp_send_json_error( 'Error al cambiar estado de pago.' );
         }
     }
 

@@ -24,6 +24,19 @@
         <textarea id="notas" name="notas" rows="3"><?php echo esc_textarea( $pedido->notas ); ?></textarea>
       </div>
 
+      <div class="gpi-form-row">
+        <label for="presupuesto">Presupuesto (€)</label>
+        <input type="number" id="presupuesto" name="presupuesto" step="0.01" min="0" value="<?php echo esc_attr( number_format( $pedido->presupuesto, 2, '.', '' ) ); ?>">
+      </div>
+
+      <div class="gpi-form-row">
+        <label>
+          <input type="hidden" name="pagado" value="0">
+          <input type="checkbox" id="pagado" name="pagado" value="1" <?php checked( $pedido->pagado, 1 ); ?>>
+          Pagado
+        </label>
+      </div>
+
       <div class="gpi-form-actions">
         <button type="submit" class="button button-primary button-large">Guardar Cambios</button>
         <button type="button" class="button button-large gpi-btn-print" data-id="<?php echo esc_attr( $pedido->id ); ?>">🖨️ Imprimir Ticket</button>

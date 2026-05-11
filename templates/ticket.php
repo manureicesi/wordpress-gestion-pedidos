@@ -134,6 +134,12 @@
   <div class="descripcion"><?php echo nl2br( esc_html( $pedido->descripcion ) ); ?></div>
 </div>
 
+<?php if ( $pedido->presupuesto > 0 ) : ?>
+<div class="campo">
+  <div class="label">Presupuesto</div>
+  <div class="valor"><?php echo esc_html( number_format( $pedido->presupuesto, 2, ',', '.' ) . ' €' ); ?> <?php echo $pedido->pagado ? '(Pagado)' : '(Pendiente)'; ?></div>
+</div>
+<?php endif; ?>
 
 <!-- ── HISTORIAL DE ESTADOS ── -->
 <?php if ( ! empty( $historial ) ) : ?>

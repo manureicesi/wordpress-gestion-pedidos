@@ -107,6 +107,8 @@ class GPI_Database {
             'descripcion' => sanitize_textarea_field( $data['descripcion'] ),
             'estado_id'   => 1,
             'notas'       => isset( $data['notas'] ) ? sanitize_textarea_field( $data['notas'] ) : '',
+            'presupuesto' => isset( $data['presupuesto'] ) ? floatval( $data['presupuesto'] ) : 0,
+            'pagado'      => isset( $data['pagado'] ) ? (int) $data['pagado'] : 0,
             'creado_por'  => get_current_user_id(),
         ] );
         if ( $result ) {
@@ -142,6 +144,12 @@ class GPI_Database {
         }
         if ( isset( $data['notas'] ) ) {
             $update['notas'] = sanitize_textarea_field( $data['notas'] );
+        }
+        if ( isset( $data['presupuesto'] ) ) {
+            $update['presupuesto'] = floatval( $data['presupuesto'] );
+        }
+        if ( isset( $data['pagado'] ) ) {
+            $update['pagado'] = (int) $data['pagado'];
         }
         if ( empty( $update ) ) {
             return false;

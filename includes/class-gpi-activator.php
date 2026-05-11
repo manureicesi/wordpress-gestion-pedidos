@@ -13,6 +13,18 @@ class GPI_Activator {
         flush_rewrite_rules();
     }
 
+    public static function maybe_upgrade() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'gpi_pedidos';
+        $cols  = $wpdb->get_col( "DESCRIBE $table" );
+        if ( ! in_array( 'presupuesto', $cols ) ) {
+            $wpdb->query( "ALTER TABLE $table ADD COLUMN presupuesto DECIMAL(10,2) NOT NULL DEFAULT 0" );
+        }
+        if ( ! in_array( 'pagado', $cols ) ) {
+            $wpdb->query( "ALTER TABLE $table ADD COLUMN pagado TINYINT(1) NOT NULL DEFAULT 0" );
+        }
+    }
+
     private static function create_tables() {
         global $wpdb;
         $charset = $wpdb->get_charset_collate();
@@ -27,6 +39,8 @@ class GPI_Activator {
             creado_por  BIGINT UNSIGNED NOT NULL,
             creado_en   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
             actualizado_en DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            presupuesto DECIMAL(10,2)   NOT NULL DEFAULT 0,
+            pagado      TINYINT(1)      NOT NULL DEFAULT 0,
             PRIMARY KEY (id),
             KEY idx_numero (numero),
             KEY idx_estado (estado_id),

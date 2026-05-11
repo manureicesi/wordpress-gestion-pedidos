@@ -18,6 +18,8 @@
       solicitante:   $form.find('#solicitante').val(),
       descripcion:   $form.find('#descripcion').val(),
       notas:         $form.find('#notas').val(),
+      presupuesto:   $form.find('#presupuesto').val(),
+      pagado:        $form.find('#pagado').is(':checked') ? 1 : 0,
     }, function (res) {
       if (res.success) {
         $msg.html('<div class="gpi-notice gpi-notice-success">✅ Pedido <strong>' + res.data.numero + '</strong> creado. Redirigiendo…</div>');
@@ -49,6 +51,8 @@
       solicitante:   $form.find('#solicitante').val(),
       descripcion:   $form.find('#descripcion').val(),
       notas:         $form.find('#notas').val(),
+      presupuesto:   $form.find('#presupuesto').val(),
+      pagado:        $form.find('#pagado').is(':checked') ? 1 : 0,
     }, function (res) {
       if (res.success) {
         $msg.html('<div class="gpi-notice gpi-notice-success">✅ Pedido actualizado. Redirigiendo…</div>');
@@ -82,6 +86,36 @@
                .css('background', res.data.estado_color);
       } else {
         alert('Error al cambiar estado: ' + (res.data || ''));
+      }
+    });
+  });
+
+  // ── Toggle pagado ───────────────────────────────────────────────────────
+  $(document).on('click', '.gpi-btn-pagado', function () {
+    var $btn = $(this);
+    var id   = $btn.data('id');
+
+    $.post(GPI.ajax_url, {
+      action:    'gpi_toggle_pagado',
+      nonce:      GPI.nonce,
+      pedido_id:  id,
+    }, function (res) {
+      if (res.success) {
+        var pagado = res.data.pagado;
+        $btn.toggleClass('pagado', pagado)
+            .attr('title', pagado ? 'Marcar como no pagado' : 'Marcar como pagado')
+            .html(pagado ? '💰' : '🪙');
+        // Actualizar el badge de pagado en la celda
+        var $row = $btn.closest('tr');
+        var $cell = $row.find('td:nth-child(5)');
+        var txt = $cell.text().replace(' ✅', '');
+        if (pagado) {
+          $cell.html(txt + ' <span class="gpi-pagado-badge" title="Pagado">✅</span>');
+        } else {
+          $cell.html(txt);
+        }
+      } else {
+        alert('Error: ' + (res.data || ''));
       }
     });
   });
