@@ -35,6 +35,7 @@
       <tr>
         <th>Número</th>
         <th>Solicitante</th>
+        <th>Contacto</th>
         <th>Descripción</th>
         <th>Estado</th>
         <th>Presupuesto</th>
@@ -51,6 +52,10 @@
           </a>
         </td>
         <td><?php echo esc_html( $p->solicitante ); ?></td>
+        <td class="gpi-contacto">
+          <?php if ( $p->telefono ) : ?><div><?php echo esc_html( $p->telefono ); ?></div><?php endif; ?>
+          <?php if ( $p->email ) : ?><div class="small" style="color:#6b7280;"><?php echo esc_html( $p->email ); ?></div><?php endif; ?>
+        </td>
         <td class="gpi-desc"><?php echo esc_html( wp_trim_words( $p->descripcion, 12 ) ); ?></td>
         <td>
           <div class="gpi-estado-cell">

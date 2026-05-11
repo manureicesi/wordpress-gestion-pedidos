@@ -20,6 +20,8 @@
       notas:         $form.find('#notas').val(),
       presupuesto:   $form.find('#presupuesto').val(),
       pagado:        $form.find('#pagado').is(':checked') ? 1 : 0,
+      telefono:      $form.find('#telefono').val(),
+      email:         $form.find('#email').val(),
     }, function (res) {
       if (res.success) {
         $msg.html('<div class="gpi-notice gpi-notice-success">✅ Pedido <strong>' + res.data.numero + '</strong> creado. Redirigiendo…</div>');
@@ -53,6 +55,8 @@
       notas:         $form.find('#notas').val(),
       presupuesto:   $form.find('#presupuesto').val(),
       pagado:        $form.find('#pagado').is(':checked') ? 1 : 0,
+      telefono:      $form.find('#telefono').val(),
+      email:         $form.find('#email').val(),
     }, function (res) {
       if (res.success) {
         $msg.html('<div class="gpi-notice gpi-notice-success">✅ Pedido actualizado. Redirigiendo…</div>');

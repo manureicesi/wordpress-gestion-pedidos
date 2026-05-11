@@ -14,6 +14,16 @@
       </div>
 
       <div class="gpi-form-row">
+        <label for="telefono">Teléfono</label>
+        <input type="tel" id="telefono" name="telefono" maxlength="30" placeholder="Ej. 666 123 456">
+      </div>
+
+      <div class="gpi-form-row">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" maxlength="150" placeholder="correo@ejemplo.com">
+      </div>
+
+      <div class="gpi-form-row">
         <label for="descripcion">Descripción del pedido <span class="required">*</span></label>
         <textarea id="descripcion" name="descripcion" required rows="5" placeholder="Detalla aquí los artículos o servicios solicitados…"></textarea>
       </div>

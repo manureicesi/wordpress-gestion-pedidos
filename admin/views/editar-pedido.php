@@ -15,6 +15,16 @@
       </div>
 
       <div class="gpi-form-row">
+        <label for="telefono">Teléfono</label>
+        <input type="tel" id="telefono" name="telefono" maxlength="30" value="<?php echo esc_attr( $pedido->telefono ); ?>">
+      </div>
+
+      <div class="gpi-form-row">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" maxlength="150" value="<?php echo esc_attr( $pedido->email ); ?>">
+      </div>
+
+      <div class="gpi-form-row">
         <label for="descripcion">Descripción del pedido <span class="required">*</span></label>
         <textarea id="descripcion" name="descripcion" required rows="5"><?php echo esc_textarea( $pedido->descripcion ); ?></textarea>
       </div>

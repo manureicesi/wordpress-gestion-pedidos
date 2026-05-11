@@ -96,6 +96,9 @@ class GPI_Admin {
     public function ajax_crear_pedido() {
         $this->verify_nonce();
         $numero = GPI_Pedido::generar_numero();
+        $telefono = sanitize_text_field( wp_unslash( $_POST['telefono'] ?? '' ) );
+        $email    = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+        error_log( 'GPI ajax_crear_pedido POST telefono=' . $telefono . ' email=' . $email );
         $id     = GPI_Database::insert_pedido( [
             'numero'      => $numero,
             'solicitante' => sanitize_text_field( wp_unslash( $_POST['solicitante'] ?? '' ) ),
@@ -103,6 +106,8 @@ class GPI_Admin {
             'notas'       => sanitize_textarea_field( wp_unslash( $_POST['notas'] ?? '' ) ),
             'presupuesto' => floatval( wp_unslash( $_POST['presupuesto'] ?? 0 ) ),
             'pagado'      => (int) ( wp_unslash( $_POST['pagado'] ?? 0 ) ),
+            'telefono'    => sanitize_text_field( wp_unslash( $_POST['telefono'] ?? '' ) ),
+            'email'       => sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ),
         ] );
         if ( $id ) {
             wp_send_json_success( [ 'id' => $id, 'numero' => $numero, 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );
@@ -117,12 +122,17 @@ class GPI_Admin {
         if ( ! $pedido_id ) {
             wp_send_json_error( 'ID de pedido no válido.' );
         }
+        $telefono = sanitize_text_field( wp_unslash( $_POST['telefono'] ?? '' ) );
+        $email    = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
+        error_log( 'GPI ajax_editar_pedido POST telefono=' . $telefono . ' email=' . $email );
         $updated = GPI_Database::update_pedido( $pedido_id, [
             'solicitante' => sanitize_text_field( wp_unslash( $_POST['solicitante'] ?? '' ) ),
             'descripcion' => sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ?? '' ) ),
             'notas'       => sanitize_textarea_field( wp_unslash( $_POST['notas'] ?? '' ) ),
             'presupuesto' => floatval( wp_unslash( $_POST['presupuesto'] ?? 0 ) ),
             'pagado'      => (int) ( wp_unslash( $_POST['pagado'] ?? 0 ) ),
+            'telefono'    => sanitize_text_field( wp_unslash( $_POST['telefono'] ?? '' ) ),
+            'email'       => sanitize_email( wp_unslash( $_POST['email'] ?? '' ) ),
         ] );
         if ( $updated ) {
             wp_send_json_success( [ 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );

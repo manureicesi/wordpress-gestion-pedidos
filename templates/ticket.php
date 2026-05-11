@@ -67,10 +67,20 @@
   .campo .valor { font-size: 11px; font-weight: bold; word-break: break-word; }
 
   /* ── Descripción ── */
-  .descripcion { font-size: 10px; margin: 1mm 0 2mm; line-height: 1.4; }
+  .descripcion {
+    font-size: 10px;
+    margin: 1mm 0 2mm;
+    line-height: 1.4;
+    max-height: 35mm;
+    overflow-y: auto;
+  }
 
   /* ── Historial ── */
-  .historial { font-size: 9px; }
+  .historial {
+    font-size: 9px;
+    max-height: 40mm;
+    overflow-y: auto;
+  }
   .historial .item { padding: 0.8mm 0; border-bottom: 1px dotted #ccc; }
   .historial .item:last-child { border-bottom: none; }
 
@@ -124,6 +134,20 @@
   <div class="valor"><?php echo esc_html( $pedido->solicitante ); ?></div>
 </div>
 
+<?php if ( ! empty( $pedido->telefono ) ) : ?>
+<div class="campo">
+  <div class="label">Teléfono</div>
+  <div class="valor"><?php echo esc_html( $pedido->telefono ); ?></div>
+</div>
+<?php endif; ?>
+
+<?php if ( ! empty( $pedido->email ) ) : ?>
+<div class="campo">
+  <div class="label">Email</div>
+  <div class="valor small"><?php echo esc_html( $pedido->email ); ?></div>
+</div>
+<?php endif; ?>
+
 <div class="campo">
   <div class="label">Fecha</div>
   <div class="valor"><?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $pedido->creado_en ) ) ); ?></div>
@@ -143,12 +167,13 @@
 
 <!-- ── HISTORIAL DE ESTADOS ── -->
 <?php if ( ! empty( $historial ) ) : ?>
+<?php $historial_limitado = array_slice( $historial, -5 ); ?>
 <hr class="divider">
 <div class="campo">
-  <div class="label">Historial</div>
+  <div class="label">Historial (últ. 5)</div>
 </div>
 <div class="historial">
-  <?php foreach ( $historial as $h ) : ?>
+  <?php foreach ( $historial_limitado as $h ) : ?>
   <div class="item">
     <?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $h->fecha ) ) ); ?> —
     <strong><?php echo esc_html( $h->estado_nombre ); ?></strong>
@@ -157,6 +182,9 @@
     <?php endif; ?>
   </div>
   <?php endforeach; ?>
+  <?php if ( count( $historial ) > 5 ) : ?>
+  <div class="item small" style="text-align:center;color:#999;">··· <?php echo count( $historial ) - 5; ?> anterior(es) ···</div>
+  <?php endif; ?>
 </div>
 <?php endif; ?>
 

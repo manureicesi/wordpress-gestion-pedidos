@@ -109,12 +109,17 @@ class GPI_Database {
             'notas'       => isset( $data['notas'] ) ? sanitize_textarea_field( $data['notas'] ) : '',
             'presupuesto' => isset( $data['presupuesto'] ) ? floatval( $data['presupuesto'] ) : 0,
             'pagado'      => isset( $data['pagado'] ) ? (int) $data['pagado'] : 0,
+            'telefono'    => isset( $data['telefono'] ) ? sanitize_text_field( $data['telefono'] ) : '',
+            'email'       => isset( $data['email'] ) ? sanitize_email( $data['email'] ) : '',
             'creado_por'  => get_current_user_id(),
         ] );
         if ( $result ) {
             $id = $wpdb->insert_id;
             self::add_historial( $id, 1, 'Pedido creado' );
             return $id;
+        }
+        if ( $wpdb->last_error ) {
+            error_log( 'GPI insert_pedido error: ' . $wpdb->last_error );
         }
         return false;
     }
@@ -151,6 +156,12 @@ class GPI_Database {
         if ( isset( $data['pagado'] ) ) {
             $update['pagado'] = (int) $data['pagado'];
         }
+        if ( isset( $data['telefono'] ) ) {
+            $update['telefono'] = sanitize_text_field( $data['telefono'] );
+        }
+        if ( isset( $data['email'] ) ) {
+            $update['email'] = sanitize_email( $data['email'] );
+        }
         if ( empty( $update ) ) {
             return false;
         }
@@ -160,6 +171,9 @@ class GPI_Database {
             $update,
             [ 'id' => absint( $id ) ]
         );
+        if ( $result === false && $wpdb->last_error ) {
+            error_log( 'GPI update_pedido error: ' . $wpdb->last_error );
+        }
         return $result !== false;
     }
 

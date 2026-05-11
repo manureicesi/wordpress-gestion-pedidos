@@ -23,6 +23,14 @@ class GPI_Activator {
         if ( ! in_array( 'pagado', $cols ) ) {
             $wpdb->query( "ALTER TABLE $table ADD COLUMN pagado TINYINT(1) NOT NULL DEFAULT 0" );
         }
+        if ( ! in_array( 'telefono', $cols ) ) {
+            $wpdb->query( "ALTER TABLE $table ADD COLUMN telefono VARCHAR(30) NOT NULL DEFAULT ''" );
+            error_log( 'GPI upgrade: columna telefono añadida' );
+        }
+        if ( ! in_array( 'email', $cols ) ) {
+            $wpdb->query( "ALTER TABLE $table ADD COLUMN email VARCHAR(150) NOT NULL DEFAULT ''" );
+            error_log( 'GPI upgrade: columna email añadida' );
+        }
     }
 
     private static function create_tables() {
@@ -41,6 +49,8 @@ class GPI_Activator {
             actualizado_en DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             presupuesto DECIMAL(10,2)   NOT NULL DEFAULT 0,
             pagado      TINYINT(1)      NOT NULL DEFAULT 0,
+            telefono    VARCHAR(30)     NOT NULL DEFAULT '',
+            email       VARCHAR(150)    NOT NULL DEFAULT '',
             PRIMARY KEY (id),
             KEY idx_numero (numero),
             KEY idx_estado (estado_id),
