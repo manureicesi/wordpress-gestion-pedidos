@@ -134,12 +134,6 @@
   <div class="descripcion"><?php echo nl2br( esc_html( $pedido->descripcion ) ); ?></div>
 </div>
 
-<?php if ( ! empty( $pedido->notas ) ) : ?>
-<div class="campo">
-  <div class="label">Notas</div>
-  <div class="descripcion"><?php echo nl2br( esc_html( $pedido->notas ) ); ?></div>
-</div>
-<?php endif; ?>
 
 <!-- ── HISTORIAL DE ESTADOS ── -->
 <?php if ( ! empty( $historial ) ) : ?>
