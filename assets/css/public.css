@@ -1,0 +1,195 @@
+/* ── Gestión de Pedidos Internos — Public CSS ── */
+
+.gpi-tracking-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  font-family: inherit;
+}
+
+/* Form */
+.gpi-tracking-form { margin-bottom: 24px; }
+.gpi-tracking-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.gpi-tracking-input-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.gpi-tracking-input-group input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color .2s;
+}
+.gpi-tracking-input-group input:focus { border-color: #2563eb; outline: none; }
+.gpi-btn-buscar {
+  padding: 10px 20px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.gpi-btn-buscar:hover { background: #1d4ed8; }
+
+/* Error */
+.gpi-tracking-error {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: #991b1b;
+  margin-bottom: 16px;
+}
+
+/* Card */
+.gpi-tracking-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+/* Header */
+.gpi-tracking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.gpi-tracking-numero {
+  font-family: monospace;
+  font-size: 20px;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0;
+}
+.gpi-tracking-badge {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+/* Datos */
+.gpi-tracking-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.gpi-tracking-dato dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: .5px;
+  margin-bottom: 2px;
+}
+.gpi-tracking-dato dd { font-weight: 600; font-size: 14px; color: #111827; }
+
+/* Progress bar */
+.gpi-progress-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin: 20px 0;
+  padding: 0 10px;
+}
+.gpi-progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+.gpi-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  z-index: 1;
+}
+.gpi-step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  border: 3px solid #e5e7eb;
+  transition: background .3s;
+}
+.gpi-step.done .gpi-step-dot   { border-color: transparent; }
+.gpi-step.current .gpi-step-dot { border: 3px solid #1d4ed8; box-shadow: 0 0 0 3px rgba(37,99,235,.2); }
+.gpi-step-label {
+  font-size: 11px;
+  text-align: center;
+  color: #6b7280;
+  max-width: 70px;
+  line-height: 1.2;
+}
+.gpi-step.done .gpi-step-label, .gpi-step.current .gpi-step-label { color: #111827; font-weight: 600; }
+
+/* Cancelado */
+.gpi-tracking-cancelado {
+  text-align: center;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+  padding: 12px;
+  font-weight: 600;
+  margin: 16px 0;
+}
+
+/* Historial */
+.gpi-historial-details {
+  margin-top: 20px;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 14px;
+}
+.gpi-historial-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #2563eb;
+  font-weight: 600;
+}
+.gpi-historial-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gpi-historial-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+.gpi-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

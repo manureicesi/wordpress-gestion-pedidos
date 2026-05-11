@@ -1,0 +1,152 @@
+/* ── Gestión de Pedidos Internos — Admin CSS ── */
+
+:root {
+  --gpi-primary: #2563eb;
+  --gpi-danger:  #ef4444;
+  --gpi-radius:  6px;
+  --gpi-border:  #e5e7eb;
+  --gpi-bg:      #f9fafb;
+}
+
+.gpi-wrap { max-width: 1200px; }
+
+/* Card */
+.gpi-card {
+  background: #fff;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  padding: 24px;
+  margin-top: 16px;
+}
+
+/* Filters */
+.gpi-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.gpi-filter-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.gpi-search-input {
+  min-width: 220px;
+  padding: 6px 10px;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  font-size: 13px;
+}
+.gpi-select {
+  padding: 6px 10px;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  font-size: 13px;
+}
+.gpi-total { margin-left: auto; color: #6b7280; font-size: 13px; }
+
+/* Table */
+.gpi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  overflow: hidden;
+}
+.gpi-table th {
+  background: var(--gpi-bg);
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--gpi-border);
+  color: #374151;
+}
+.gpi-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--gpi-border);
+  vertical-align: middle;
+}
+.gpi-table tbody tr:last-child td { border-bottom: none; }
+.gpi-table tbody tr:hover { background: #f0f9ff; }
+
+.gpi-numero { font-family: monospace; font-weight: 700; font-size: 12px; color: var(--gpi-primary); }
+.gpi-desc   { color: #6b7280; max-width: 280px; }
+
+/* Badge */
+.gpi-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+
+/* Estado cell */
+.gpi-estado-cell { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gpi-estado-select {
+  font-size: 11px;
+  padding: 3px 6px;
+  border: 1px solid var(--gpi-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Actions */
+.gpi-actions { white-space: nowrap; }
+.gpi-actions .button { padding: 4px 8px; font-size: 14px; min-height: auto; }
+.gpi-btn-delete:hover { background: #fee2e2; border-color: var(--gpi-danger); }
+
+/* Form */
+.gpi-form-row { margin-bottom: 16px; }
+.gpi-form-row label { display: block; font-weight: 600; margin-bottom: 5px; }
+.gpi-form-row input[type=text],
+.gpi-form-row textarea {
+  width: 100%;
+  max-width: 600px;
+  padding: 8px 12px;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  font-size: 14px;
+  font-family: inherit;
+}
+.gpi-form-row textarea { resize: vertical; }
+.required { color: var(--gpi-danger); }
+.gpi-form-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* Feedback messages */
+#gpi-form-msg .gpi-notice {
+  padding: 10px 14px;
+  border-radius: var(--gpi-radius);
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+#gpi-form-msg .gpi-notice-success { background: #d1fae5; border: 1px solid #6ee7b7; }
+#gpi-form-msg .gpi-notice-error   { background: #fee2e2; border: 1px solid #fca5a5; }
+
+/* Pagination */
+.gpi-pagination { margin-top: 16px; display: flex; gap: 4px; }
+.gpi-pagination a {
+  display: inline-block;
+  padding: 5px 11px;
+  border: 1px solid var(--gpi-border);
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 13px;
+  color: #374151;
+}
+.gpi-pagination a:hover, .gpi-pagination a.current {
+  background: var(--gpi-primary);
+  color: #fff;
+  border-color: var(--gpi-primary);
+}
+
+.gpi-empty { padding: 24px; text-align: center; color: #6b7280; font-style: italic; }
