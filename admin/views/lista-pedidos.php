@@ -43,7 +43,11 @@
     <tbody>
     <?php foreach ( $pedidos as $p ) : ?>
       <tr data-id="<?php echo esc_attr( $p->id ); ?>">
-        <td class="gpi-numero"><?php echo esc_html( $p->numero ); ?></td>
+        <td class="gpi-numero">
+          <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-editar-pedido&pedido_id=' . $p->id ) ); ?>">
+            <?php echo esc_html( $p->numero ); ?>
+          </a>
+        </td>
         <td><?php echo esc_html( $p->solicitante ); ?></td>
         <td class="gpi-desc"><?php echo esc_html( wp_trim_words( $p->descripcion, 12 ) ); ?></td>
         <td>
@@ -63,6 +67,7 @@
         </td>
         <td><?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $p->creado_en ) ) ); ?></td>
         <td class="gpi-actions">
+          <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-editar-pedido&pedido_id=' . $p->id ) ); ?>" class="button button-small" title="Editar pedido">✏️</a>
           <button class="button button-small gpi-btn-print" data-id="<?php echo esc_attr( $p->id ); ?>" title="Imprimir resguardo">🖨️</button>
           <button class="button button-small gpi-btn-delete" data-id="<?php echo esc_attr( $p->id ); ?>" title="Eliminar">🗑️</button>
         </td>

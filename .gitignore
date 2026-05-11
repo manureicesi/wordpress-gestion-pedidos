@@ -25,3 +25,5 @@
 /vendors/*
 
 *.zip
+
+.idea/

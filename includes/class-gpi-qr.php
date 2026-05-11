@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class GPI_QR {
 
     /**
-     * Devuelve la URL de imagen del QR usando la API de Google Charts.
+     * Devuelve la URL de imagen del QR usando la API de QRServer.
      * No requiere librerías externas.
      *
      * @param  string $data   Texto o URL a codificar.
@@ -13,11 +13,9 @@ class GPI_QR {
      */
     public static function url( $data, $size = 120 ) {
         return add_query_arg( [
-            'cht'  => 'qr',
-            'chs'  => $size . 'x' . $size,
-            'chl'  => rawurlencode( $data ),
-            'choe' => 'UTF-8',
-        ], 'https://chart.googleapis.com/chart' );
+            'size' => $size . 'x' . $size,
+            'data' => rawurlencode( $data ),
+        ], 'https://api.qrserver.com/v1/create-qr-code/' );
     }
 
     /**

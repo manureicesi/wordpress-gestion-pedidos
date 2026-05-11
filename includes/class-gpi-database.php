@@ -131,6 +131,30 @@ class GPI_Database {
         return false;
     }
 
+    public static function update_pedido( $id, $data ) {
+        global $wpdb;
+        $update = [];
+        if ( isset( $data['solicitante'] ) ) {
+            $update['solicitante'] = sanitize_text_field( $data['solicitante'] );
+        }
+        if ( isset( $data['descripcion'] ) ) {
+            $update['descripcion'] = sanitize_textarea_field( $data['descripcion'] );
+        }
+        if ( isset( $data['notas'] ) ) {
+            $update['notas'] = sanitize_textarea_field( $data['notas'] );
+        }
+        if ( empty( $update ) ) {
+            return false;
+        }
+        $update['actualizado_en'] = current_time( 'mysql' );
+        $result = $wpdb->update(
+            $wpdb->prefix . 'gpi_pedidos',
+            $update,
+            [ 'id' => absint( $id ) ]
+        );
+        return $result !== false;
+    }
+
     public static function delete_pedido( $id ) {
         global $wpdb;
         $wpdb->delete( $wpdb->prefix . 'gpi_historial', [ 'pedido_id' => absint( $id ) ] );

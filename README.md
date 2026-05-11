@@ -7,7 +7,6 @@ Comando para crear directorio del plugin e instalarlo:
 
 ```
 PLUGIN=gestion-pedidos-internos && DEST="$(pwd)/${PLUGIN}.zip" && zip -r "$DEST" . --exclude "*.git*" --exclude ".gitignore" --exclude "*.DS_Store" --exclude "README.md" && echo "✓ ZIP creado en $DEST"
-
 ```
 
 ---

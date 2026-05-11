@@ -32,6 +32,37 @@
     });
   });
 
+  // ── Editar pedido ───────────────────────────────────────────────────────
+  $('#gpi-form-editar').on('submit', function (e) {
+    e.preventDefault();
+    var $form = $(this);
+    var $btn  = $form.find('button[type=submit]');
+    var $msg  = $('#gpi-form-msg');
+
+    $btn.prop('disabled', true).text('Guardando…');
+    $msg.html('');
+
+    $.post(GPI.ajax_url, {
+      action:       'gpi_editar_pedido',
+      nonce:         GPI.nonce,
+      pedido_id:     $form.find('#pedido_id').val(),
+      solicitante:   $form.find('#solicitante').val(),
+      descripcion:   $form.find('#descripcion').val(),
+      notas:         $form.find('#notas').val(),
+    }, function (res) {
+      if (res.success) {
+        $msg.html('<div class="gpi-notice gpi-notice-success">✅ Pedido actualizado. Redirigiendo…</div>');
+        setTimeout(function () { window.location = res.data.redirect; }, 1200);
+      } else {
+        $msg.html('<div class="gpi-notice gpi-notice-error">❌ ' + (res.data || 'Error desconocido.') + '</div>');
+        $btn.prop('disabled', false).text('Guardar Cambios');
+      }
+    }).fail(function () {
+      $msg.html('<div class="gpi-notice gpi-notice-error">❌ Error de red. Inténtalo de nuevo.</div>');
+      $btn.prop('disabled', false).text('Guardar Cambios');
+    });
+  });
+
   // ── Cambiar estado inline ────────────────────────────────────────────────
   $(document).on('change', '.gpi-estado-select', function () {
     var $sel      = $(this);

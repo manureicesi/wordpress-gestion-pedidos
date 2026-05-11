@@ -10,6 +10,7 @@ class GPI_Admin {
         add_action( 'wp_ajax_gpi_cambiar_estado',  [ $this, 'ajax_cambiar_estado' ] );
         add_action( 'wp_ajax_gpi_eliminar_pedido', [ $this, 'ajax_eliminar_pedido' ] );
         add_action( 'wp_ajax_gpi_imprimir_ticket', [ $this, 'ajax_imprimir_ticket' ] );
+        add_action( 'wp_ajax_gpi_editar_pedido',   [ $this, 'ajax_editar_pedido' ] );
         add_action( 'admin_post_gpi_save_settings', [ $this, 'save_settings' ] );
     }
 
@@ -17,17 +18,21 @@ class GPI_Admin {
 
     public function register_menus() {
         add_menu_page(
-            'Pedidos Internos', 'Pedidos', 'manage_options',
+            'Pedidos Internos', 'Pedidos', 'manage_woocommerce',
             'gpi-pedidos', [ $this, 'page_lista_pedidos' ],
             'dashicons-clipboard', 26
         );
         add_submenu_page(
             'gpi-pedidos', 'Nuevo Pedido', 'Nuevo Pedido',
-            'manage_options', 'gpi-nuevo-pedido', [ $this, 'page_nuevo_pedido' ]
+            'manage_woocommerce', 'gpi-nuevo-pedido', [ $this, 'page_nuevo_pedido' ]
         );
         add_submenu_page(
             'gpi-pedidos', 'Ajustes', 'Ajustes',
-            'manage_options', 'gpi-ajustes', [ $this, 'page_ajustes' ]
+            'manage_woocommerce', 'gpi-ajustes', [ $this, 'page_ajustes' ]
+        );
+        add_submenu_page(
+            'gpi-pedidos', 'Editar Pedido', null,
+            'manage_woocommerce', 'gpi-editar-pedido', [ $this, 'page_editar_pedido' ]
         );
     }
 
@@ -66,6 +71,15 @@ class GPI_Admin {
         include GPI_PLUGIN_DIR . 'admin/views/nuevo-pedido.php';
     }
 
+    public function page_editar_pedido() {
+        $pedido_id = isset( $_GET['pedido_id'] ) ? absint( $_GET['pedido_id'] ) : 0;
+        $pedido    = GPI_Database::get_pedido( $pedido_id );
+        if ( ! $pedido ) {
+            wp_die( 'Pedido no encontrado.' );
+        }
+        include GPI_PLUGIN_DIR . 'admin/views/editar-pedido.php';
+    }
+
     public function page_ajustes() {
         include GPI_PLUGIN_DIR . 'admin/views/ajustes.php';
     }
@@ -74,7 +88,7 @@ class GPI_Admin {
 
     private function verify_nonce() {
         check_ajax_referer( 'gpi_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Sin permiso.', 403 );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( 'Sin permiso.', 403 );
     }
 
     public function ajax_crear_pedido() {
@@ -90,6 +104,24 @@ class GPI_Admin {
             wp_send_json_success( [ 'id' => $id, 'numero' => $numero, 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );
         } else {
             wp_send_json_error( 'Error al crear el pedido.' );
+        }
+    }
+
+    public function ajax_editar_pedido() {
+        $this->verify_nonce();
+        $pedido_id = absint( $_POST['pedido_id'] ?? 0 );
+        if ( ! $pedido_id ) {
+            wp_send_json_error( 'ID de pedido no válido.' );
+        }
+        $updated = GPI_Database::update_pedido( $pedido_id, [
+            'solicitante' => sanitize_text_field( wp_unslash( $_POST['solicitante'] ?? '' ) ),
+            'descripcion' => sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ?? '' ) ),
+            'notas'       => sanitize_textarea_field( wp_unslash( $_POST['notas'] ?? '' ) ),
+        ] );
+        if ( $updated ) {
+            wp_send_json_success( [ 'redirect' => admin_url( 'admin.php?page=gpi-pedidos' ) ] );
+        } else {
+            wp_send_json_error( 'Error al actualizar el pedido.' );
         }
     }
 
@@ -122,7 +154,7 @@ class GPI_Admin {
 
     public function ajax_imprimir_ticket() {
         if ( ! check_ajax_referer( 'gpi_print', 'nonce', false ) ) wp_die( 'Nonce inválido.' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Sin permiso.' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die( 'Sin permiso.' );
         $id = absint( $_GET['pedido_id'] ?? 0 );
         GPI_Print::render_ticket( $id );
     }
@@ -131,7 +163,7 @@ class GPI_Admin {
 
     public function save_settings() {
         check_admin_referer( 'gpi_save_settings' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Sin permiso.' );
+        if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die( 'Sin permiso.' );
         update_option( 'gpi_ticket_ancho',    sanitize_text_field( wp_unslash( $_POST['gpi_ticket_ancho']    ?? '80mm' ) ) );
         update_option( 'gpi_tracking_page_id', absint( $_POST['gpi_tracking_page_id'] ?? 0 ) );
         wp_redirect( admin_url( 'admin.php?page=gpi-ajustes&updated=1' ) );
