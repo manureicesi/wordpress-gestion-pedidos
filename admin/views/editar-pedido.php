@@ -26,8 +26,39 @@
 
       <div class="gpi-form-actions">
         <button type="submit" class="button button-primary button-large">Guardar Cambios</button>
+        <button type="button" class="button button-large gpi-btn-print" data-id="<?php echo esc_attr( $pedido->id ); ?>">🖨️ Imprimir Ticket</button>
         <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-pedidos' ) ); ?>" class="button button-large">Cancelar</a>
       </div>
     </form>
   </div>
+
+  <?php if ( ! empty( $historial ) ) : ?>
+  <div class="gpi-card" style="margin-top: 20px;">
+    <h2>📜 Historial de Estados</h2>
+    <table class="widefat fixed striped">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Usuario</th>
+          <th>Nota</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ( $historial as $h ) : ?>
+        <tr>
+          <td><?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $h->fecha ) ) ); ?></td>
+          <td>
+            <span class="gpi-badge" style="background:<?php echo esc_attr( $h->estado_color ); ?>;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;">
+              <?php echo esc_html( $h->estado_nombre ); ?>
+            </span>
+          </td>
+          <td><?php echo esc_html( $h->usuario ?: '—' ); ?></td>
+          <td><?php echo esc_html( $h->nota ?: '—' ); ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <?php endif; ?>
 </div>

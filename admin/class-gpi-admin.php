@@ -77,6 +77,7 @@ class GPI_Admin {
         if ( ! $pedido ) {
             wp_die( 'Pedido no encontrado.' );
         }
+        $historial = GPI_Database::get_historial( $pedido_id );
         include GPI_PLUGIN_DIR . 'admin/views/editar-pedido.php';
     }
 
