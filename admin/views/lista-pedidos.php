@@ -79,12 +79,12 @@
         </td>
         <td><?php echo esc_html( date_i18n( 'd/m/Y H:i', strtotime( $p->creado_en ) ) ); ?></td>
         <td class="gpi-actions">
-          <button class="button button-small gpi-btn-pagado <?php echo $p->pagado ? 'pagado' : ''; ?>" data-id="<?php echo esc_attr( $p->id ); ?>" title="<?php echo $p->pagado ? 'Marcar como no pagado' : 'Marcar como pagado'; ?>">
+          <button class="button button-small gpi-btn-pagado <?php echo $p->pagado ? 'pagado' : ''; ?>" data-id="<?php echo esc_attr( $p->id ); ?>" data-tooltip="<?php echo $p->pagado ? 'Marcar como no pagado' : 'Marcar como pagado'; ?>">
             <?php echo $p->pagado ? '💰' : '🪙'; ?>
           </button>
-          <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-editar-pedido&pedido_id=' . $p->id ) ); ?>" class="button button-small" title="Editar pedido">✏️</a>
-          <button class="button button-small gpi-btn-print" data-id="<?php echo esc_attr( $p->id ); ?>" title="Imprimir resguardo">🖨️</button>
-          <button class="button button-small gpi-btn-delete" data-id="<?php echo esc_attr( $p->id ); ?>" title="Eliminar">🗑️</button>
+          <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-editar-pedido&pedido_id=' . $p->id ) ); ?>" class="button button-small" data-tooltip="Editar pedido">✏️</a>
+          <button class="button button-small gpi-btn-print" data-id="<?php echo esc_attr( $p->id ); ?>" data-tooltip="Imprimir resguardo">🖨️</button>
+          <button class="button button-small gpi-btn-delete" data-id="<?php echo esc_attr( $p->id ); ?>" data-tooltip="Eliminar pedido">🗑️</button>
         </td>
       </tr>
     <?php endforeach; ?>
