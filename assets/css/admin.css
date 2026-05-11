@@ -150,3 +150,40 @@
 }
 
 .gpi-empty { padding: 24px; text-align: center; color: #6b7280; font-style: italic; }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 782px) {
+  .gpi-wrap { padding: 0 10px; }
+
+  .gpi-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gpi-total { margin-left: 0; margin-top: 4px; }
+
+  .gpi-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--gpi-border);
+    border-radius: var(--gpi-radius);
+  }
+  .gpi-table {
+    min-width: 720px;
+    border: none;
+    border-radius: 0;
+  }
+  .gpi-table th,
+  .gpi-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .gpi-desc { max-width: 160px; }
+
+  .gpi-actions .button {
+    padding: 2px 5px;
+    font-size: 12px;
+  }
+
+  .gpi-pagination { flex-wrap: wrap; }
+}

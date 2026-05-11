@@ -23,6 +23,19 @@
         <textarea id="notas" name="notas" rows="3" placeholder="Notas opcionales (solo visibles internamente)"></textarea>
       </div>
 
+      <div class="gpi-form-row">
+        <label for="presupuesto">Presupuesto (€)</label>
+        <input type="number" id="presupuesto" name="presupuesto" step="0.01" min="0" placeholder="0.00">
+      </div>
+
+      <div class="gpi-form-row">
+        <label>
+          <input type="hidden" name="pagado" value="0">
+          <input type="checkbox" id="pagado" name="pagado" value="1">
+          Pagado
+        </label>
+      </div>
+
       <div class="gpi-form-actions">
         <button type="submit" class="button button-primary button-large">Crear Pedido</button>
         <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-pedidos' ) ); ?>" class="button button-large">Cancelar</a>
