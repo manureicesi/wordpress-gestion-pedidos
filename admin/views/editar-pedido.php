@@ -1,6 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) exit; ?>
 <div class="wrap gpi-wrap">
-  <h1>✏️ Editar Pedido <?php echo esc_html( $pedido->numero ); ?></h1>
+  <h1>Editar Pedido <?php echo esc_html( $pedido->numero ); ?></h1>
   <hr class="wp-header-end">
 
   <div class="gpi-card">
@@ -39,6 +39,23 @@
         <input type="number" id="presupuesto" name="presupuesto" step="0.01" min="0" value="<?php echo esc_attr( number_format( $pedido->presupuesto, 2, '.', '' ) ); ?>">
       </div>
 
+      <?php if ( ! empty( $etiquetas ) ) : ?>
+      <div class="gpi-form-row">
+        <label for="etiqueta_id">Etiqueta</label>
+        <select id="etiqueta_id" name="etiqueta_id" class="gpi-select">
+          <option value="0">— Sin etiqueta —</option>
+          <?php foreach ( $etiquetas as $et ) : ?>
+            <option value="<?php echo esc_attr( $et->id ); ?>" <?php selected( $pedido->etiqueta_id, $et->id ); ?>>
+              <?php echo esc_html( $et->nombre ); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <?php if ( $pedido->etiqueta_nombre ) : ?>
+          <span style="margin-left:8px"><?php echo GPI_Estados::badge( $pedido->etiqueta_nombre, $pedido->etiqueta_color ); ?></span>
+        <?php endif; ?>
+      </div>
+      <?php endif; ?>
+
       <div class="gpi-form-row">
         <label>
           <input type="hidden" name="pagado" value="0">
@@ -57,7 +74,7 @@
 
   <?php if ( ! empty( $historial ) ) : ?>
   <div class="gpi-card" style="margin-top: 20px;">
-    <h2>📜 Historial de Estados</h2>
+    <h2>Historial de Estados</h2>
     <table class="widefat fixed striped">
       <thead>
         <tr>

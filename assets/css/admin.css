@@ -10,6 +10,16 @@
 
 .gpi-wrap { max-width: 1200px; }
 
+/* Section title */
+.gpi-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 24px 0 0;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gpi-border);
+  color: #111827;
+}
+
 /* Card */
 .gpi-card {
   background: #fff;
@@ -32,6 +42,13 @@
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  flex: 1;
+}
+.gpi-filter-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 .gpi-search-input {
   min-width: 220px;
@@ -46,7 +63,20 @@
   border-radius: var(--gpi-radius);
   font-size: 13px;
 }
-.gpi-total { margin-left: auto; color: #6b7280; font-size: 13px; }
+.gpi-check-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gpi-total { color: #6b7280; font-size: 13px; }
+.gpi-btn-export {
+  white-space: nowrap;
+  font-size: 12px;
+}
 
 /* Table */
 .gpi-table {
@@ -75,7 +105,7 @@
 .gpi-table tbody tr:hover { background: #f0f9ff; }
 
 .gpi-numero { font-family: monospace; font-weight: 700; font-size: 12px; color: var(--gpi-primary); }
-.gpi-desc   { color: #6b7280; max-width: 280px; }
+.gpi-desc   { color: #6b7280; max-width: 240px; }
 
 /* Badge */
 .gpi-badge {
@@ -103,13 +133,19 @@
 /* Actions */
 .gpi-actions { white-space: nowrap; }
 .gpi-actions .button { padding: 4px 8px; font-size: 14px; min-height: auto; }
-.gpi-btn-delete:hover { background: #fee2e2; border-color: var(--gpi-danger); }
+.gpi-btn-delete:hover,
+.gpi-btn-delete-estado:hover,
+.gpi-btn-delete-etiqueta:hover { background: #fee2e2; border-color: var(--gpi-danger); }
 
 /* Form */
 .gpi-form-row { margin-bottom: 16px; }
 .gpi-form-row label { display: block; font-weight: 600; margin-bottom: 5px; }
 .gpi-form-row input[type=text],
-.gpi-form-row textarea {
+.gpi-form-row input[type=tel],
+.gpi-form-row input[type=email],
+.gpi-form-row input[type=number],
+.gpi-form-row textarea,
+.gpi-form-row select {
   width: 100%;
   max-width: 600px;
   padding: 8px 12px;
@@ -123,14 +159,15 @@
 .gpi-form-actions { display: flex; gap: 10px; margin-top: 20px; }
 
 /* Feedback messages */
-#gpi-form-msg .gpi-notice {
+#gpi-form-msg .gpi-notice,
+.gpi-notice {
   padding: 10px 14px;
   border-radius: var(--gpi-radius);
   margin-bottom: 12px;
   font-size: 13px;
 }
-#gpi-form-msg .gpi-notice-success { background: #d1fae5; border: 1px solid #6ee7b7; }
-#gpi-form-msg .gpi-notice-error   { background: #fee2e2; border: 1px solid #fca5a5; }
+.gpi-notice-success { background: #d1fae5; border: 1px solid #6ee7b7; }
+.gpi-notice-error   { background: #fee2e2; border: 1px solid #fca5a5; }
 
 /* Pagination */
 .gpi-pagination { margin-top: 16px; display: flex; gap: 4px; }
@@ -149,13 +186,86 @@
   border-color: var(--gpi-primary);
 }
 
+/* ── Settings tables ────────────────────────────────────────────────────── */
+
+.gpi-settings-table { border: 1px solid var(--gpi-border); border-radius: var(--gpi-radius); overflow: hidden; }
+.gpi-settings-table th {
+  background: var(--gpi-bg);
+  padding: 9px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.gpi-settings-table td {
+  padding: 9px 12px;
+  border-top: 1px solid var(--gpi-border);
+  vertical-align: middle;
+  font-size: 13px;
+}
+.gpi-settings-table tr:hover td { background: #fafafa; }
+
+.gpi-color-dot {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,.12);
+  vertical-align: middle;
+}
+.gpi-color-input {
+  width: 44px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--gpi-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.gpi-check { color: #10b981; font-weight: 700; }
+.gpi-cross { color: #ef4444; font-weight: 700; }
+
+.gpi-order-btns { white-space: nowrap; }
+.gpi-order-btns .button {
+  padding: 2px 6px;
+  min-height: auto;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* Inline form in settings */
+.gpi-inline-form {
+  background: var(--gpi-bg);
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  padding: 16px 20px;
+}
+.gpi-inline-form h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+.gpi-inline-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+.gpi-inline-form input[type=text] {
+  padding: 6px 10px;
+  border: 1px solid var(--gpi-border);
+  border-radius: var(--gpi-radius);
+  font-size: 13px;
+}
+
 /* ── Tooltips ─────────────────────────────────────────────────────────── */
 
 [data-tooltip] {
   position: relative;
   cursor: pointer;
 }
-
 [data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
@@ -175,7 +285,6 @@
   transition: opacity .15s ease, transform .15s ease;
   z-index: 100;
 }
-
 [data-tooltip]::before {
   content: '';
   position: absolute;
@@ -188,7 +297,6 @@
   transition: opacity .15s ease, transform .15s ease;
   z-index: 100;
 }
-
 [data-tooltip]:hover::after,
 [data-tooltip]:hover::before {
   opacity: 1;
@@ -196,17 +304,14 @@
 }
 
 .gpi-empty { padding: 24px; text-align: center; color: #6b7280; font-style: italic; }
+.gpi-empty a { font-style: normal; }
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 782px) {
   .gpi-wrap { padding: 0 10px; }
-
-  .gpi-filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .gpi-total { margin-left: 0; margin-top: 4px; }
+  .gpi-filters { flex-direction: column; align-items: stretch; }
+  .gpi-filter-right { margin-left: 0; justify-content: space-between; }
 
   .gpi-table-wrapper {
     overflow-x: auto;
@@ -214,22 +319,9 @@
     border: 1px solid var(--gpi-border);
     border-radius: var(--gpi-radius);
   }
-  .gpi-table {
-    min-width: 720px;
-    border: none;
-    border-radius: 0;
-  }
-  .gpi-table th,
-  .gpi-table td {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-  .gpi-desc { max-width: 160px; }
-
-  .gpi-actions .button {
-    padding: 2px 5px;
-    font-size: 12px;
-  }
-
+  .gpi-table { min-width: 780px; border: none; border-radius: 0; }
+  .gpi-table th, .gpi-table td { padding: 8px 10px; font-size: 12px; }
+  .gpi-desc { max-width: 140px; }
+  .gpi-actions .button { padding: 2px 5px; font-size: 12px; }
   .gpi-pagination { flex-wrap: wrap; }
 }

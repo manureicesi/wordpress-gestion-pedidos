@@ -8,12 +8,14 @@ class GPI_Database {
     public static function get_pedidos( $args = [] ) {
         global $wpdb;
         $defaults = [
-            'estado_id'  => null,
-            'search'     => '',
-            'per_page'   => 20,
-            'paged'      => 1,
-            'orderby'    => 'creado_en',
-            'order'      => 'DESC',
+            'estado_id'          => null,
+            'etiqueta_id'        => null,
+            'excluir_estado_ids' => [],
+            'search'             => '',
+            'per_page'           => 20,
+            'paged'              => 1,
+            'orderby'            => 'creado_en',
+            'order'              => 'DESC',
         ];
         $args   = wp_parse_args( $args, $defaults );
         $offset = ( $args['paged'] - 1 ) * $args['per_page'];
@@ -24,6 +26,18 @@ class GPI_Database {
         if ( ! empty( $args['estado_id'] ) ) {
             $where    .= ' AND p.estado_id = %d';
             $values[]  = $args['estado_id'];
+        }
+        if ( ! empty( $args['etiqueta_id'] ) ) {
+            $where    .= ' AND p.etiqueta_id = %d';
+            $values[]  = $args['etiqueta_id'];
+        }
+        if ( ! empty( $args['excluir_estado_ids'] ) ) {
+            $ids         = array_map( 'absint', (array) $args['excluir_estado_ids'] );
+            $holders     = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+            $where      .= " AND p.estado_id NOT IN ($holders)";
+            foreach ( $ids as $eid ) {
+                $values[] = $eid;
+            }
         }
         if ( ! empty( $args['search'] ) ) {
             $where    .= ' AND (p.numero LIKE %s OR p.solicitante LIKE %s OR p.descripcion LIKE %s)';
@@ -39,16 +53,75 @@ class GPI_Database {
         $orderby = in_array( $args['orderby'], $allowed_fields, true ) ? 'p.' . $args['orderby'] : 'p.creado_en';
 
         $sql = "SELECT p.*, e.nombre AS estado_nombre, e.color AS estado_color, e.slug AS estado_slug,
-                       u.display_name AS creador_nombre
+                       u.display_name AS creador_nombre,
+                       et.nombre AS etiqueta_nombre, et.color AS etiqueta_color
                 FROM {$wpdb->prefix}gpi_pedidos p
                 LEFT JOIN {$wpdb->prefix}gpi_estados e ON p.estado_id = e.id
                 LEFT JOIN {$wpdb->users} u ON p.creado_por = u.ID
+                LEFT JOIN {$wpdb->prefix}gpi_etiquetas et ON p.etiqueta_id = et.id
                 WHERE $where
                 ORDER BY $orderby $order
                 LIMIT %d OFFSET %d";
 
         $values[] = $args['per_page'];
         $values[] = $offset;
+
+        if ( ! empty( $values ) ) {
+            $sql = $wpdb->prepare( $sql, ...$values );
+        }
+
+        return $wpdb->get_results( $sql );
+    }
+
+    public static function get_all_pedidos_for_export( $args = [] ) {
+        global $wpdb;
+        $defaults = [
+            'estado_id'          => null,
+            'etiqueta_id'        => null,
+            'excluir_estado_ids' => [],
+            'search'             => '',
+            'orderby'            => 'creado_en',
+            'order'              => 'DESC',
+        ];
+        $args   = wp_parse_args( $args, $defaults );
+        $where  = '1=1';
+        $values = [];
+
+        if ( ! empty( $args['estado_id'] ) ) {
+            $where    .= ' AND p.estado_id = %d';
+            $values[]  = $args['estado_id'];
+        }
+        if ( ! empty( $args['etiqueta_id'] ) ) {
+            $where    .= ' AND p.etiqueta_id = %d';
+            $values[]  = $args['etiqueta_id'];
+        }
+        if ( ! empty( $args['excluir_estado_ids'] ) ) {
+            $ids     = array_map( 'absint', (array) $args['excluir_estado_ids'] );
+            $holders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+            $where  .= " AND p.estado_id NOT IN ($holders)";
+            foreach ( $ids as $eid ) {
+                $values[] = $eid;
+            }
+        }
+        if ( ! empty( $args['search'] ) ) {
+            $where    .= ' AND (p.numero LIKE %s OR p.solicitante LIKE %s OR p.descripcion LIKE %s)';
+            $like      = '%' . $wpdb->esc_like( $args['search'] ) . '%';
+            $values[]  = $like;
+            $values[]  = $like;
+            $values[]  = $like;
+        }
+
+        $allowed_order  = [ 'ASC', 'DESC' ];
+        $allowed_fields = [ 'creado_en', 'actualizado_en', 'numero', 'solicitante', 'estado_id' ];
+        $order   = in_array( strtoupper( $args['order'] ),   $allowed_order,  true ) ? strtoupper( $args['order'] ) : 'DESC';
+        $orderby = in_array( $args['orderby'], $allowed_fields, true ) ? 'p.' . $args['orderby'] : 'p.creado_en';
+
+        $sql = "SELECT p.*, e.nombre AS estado_nombre, et.nombre AS etiqueta_nombre
+                FROM {$wpdb->prefix}gpi_pedidos p
+                LEFT JOIN {$wpdb->prefix}gpi_estados e ON p.estado_id = e.id
+                LEFT JOIN {$wpdb->prefix}gpi_etiquetas et ON p.etiqueta_id = et.id
+                WHERE $where
+                ORDER BY $orderby $order";
 
         if ( ! empty( $values ) ) {
             $sql = $wpdb->prepare( $sql, ...$values );
@@ -66,6 +139,18 @@ class GPI_Database {
             $where    .= ' AND estado_id = %d';
             $values[]  = $args['estado_id'];
         }
+        if ( ! empty( $args['etiqueta_id'] ) ) {
+            $where    .= ' AND etiqueta_id = %d';
+            $values[]  = $args['etiqueta_id'];
+        }
+        if ( ! empty( $args['excluir_estado_ids'] ) ) {
+            $ids     = array_map( 'absint', (array) $args['excluir_estado_ids'] );
+            $holders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+            $where  .= " AND estado_id NOT IN ($holders)";
+            foreach ( $ids as $eid ) {
+                $values[] = $eid;
+            }
+        }
         if ( ! empty( $args['search'] ) ) {
             $where    .= ' AND (numero LIKE %s OR solicitante LIKE %s OR descripcion LIKE %s)';
             $like      = '%' . $wpdb->esc_like( $args['search'] ) . '%';
@@ -81,10 +166,12 @@ class GPI_Database {
         global $wpdb;
         return $wpdb->get_row( $wpdb->prepare(
             "SELECT p.*, e.nombre AS estado_nombre, e.color AS estado_color, e.slug AS estado_slug,
-                    u.display_name AS creador_nombre
+                    u.display_name AS creador_nombre,
+                    et.nombre AS etiqueta_nombre, et.color AS etiqueta_color
              FROM {$wpdb->prefix}gpi_pedidos p
              LEFT JOIN {$wpdb->prefix}gpi_estados e ON p.estado_id = e.id
              LEFT JOIN {$wpdb->users} u ON p.creado_por = u.ID
+             LEFT JOIN {$wpdb->prefix}gpi_etiquetas et ON p.etiqueta_id = et.id
              WHERE p.id = %d", $id
         ) );
     }
@@ -106,6 +193,7 @@ class GPI_Database {
             'solicitante' => sanitize_text_field( $data['solicitante'] ),
             'descripcion' => sanitize_textarea_field( $data['descripcion'] ),
             'estado_id'   => 1,
+            'etiqueta_id' => isset( $data['etiqueta_id'] ) && $data['etiqueta_id'] > 0 ? absint( $data['etiqueta_id'] ) : null,
             'notas'       => isset( $data['notas'] ) ? sanitize_textarea_field( $data['notas'] ) : '',
             'presupuesto' => isset( $data['presupuesto'] ) ? floatval( $data['presupuesto'] ) : 0,
             'pagado'      => isset( $data['pagado'] ) ? (int) $data['pagado'] : 0,
@@ -161,6 +249,9 @@ class GPI_Database {
         }
         if ( isset( $data['email'] ) ) {
             $update['email'] = sanitize_email( $data['email'] );
+        }
+        if ( array_key_exists( 'etiqueta_id', $data ) ) {
+            $update['etiqueta_id'] = ( $data['etiqueta_id'] > 0 ) ? absint( $data['etiqueta_id'] ) : null;
         }
         if ( empty( $update ) ) {
             return false;
@@ -220,5 +311,156 @@ class GPI_Database {
         return $wpdb->get_row( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}gpi_estados WHERE id = %d", $id
         ) );
+    }
+
+    public static function get_estados_ocultos_ids() {
+        global $wpdb;
+        $ids = $wpdb->get_col(
+            "SELECT id FROM {$wpdb->prefix}gpi_estados WHERE ocultar_por_defecto = 1"
+        );
+        return array_map( 'intval', $ids );
+    }
+
+    public static function insert_estado_item( $data ) {
+        global $wpdb;
+        $nombre = sanitize_text_field( $data['nombre'] );
+        $slug   = sanitize_title( $nombre );
+
+        // Ensure unique slug
+        $base = $slug;
+        $i    = 1;
+        while ( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}gpi_estados WHERE slug = %s", $slug ) ) > 0 ) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $max_orden = (int) $wpdb->get_var( "SELECT MAX(orden) FROM {$wpdb->prefix}gpi_estados" );
+
+        return $wpdb->insert( $wpdb->prefix . 'gpi_estados', [
+            'nombre'              => $nombre,
+            'slug'                => $slug,
+            'color'               => sanitize_hex_color( $data['color'] ?? '#cccccc' ) ?: '#cccccc',
+            'orden'               => $max_orden + 1,
+            'activo'              => isset( $data['activo'] ) ? (int) (bool) $data['activo'] : 1,
+            'ocultar_por_defecto' => isset( $data['ocultar_por_defecto'] ) ? (int) (bool) $data['ocultar_por_defecto'] : 0,
+        ] );
+    }
+
+    public static function update_estado_item( $id, $data ) {
+        global $wpdb;
+        $update = [];
+        if ( isset( $data['nombre'] ) ) {
+            $update['nombre'] = sanitize_text_field( $data['nombre'] );
+        }
+        if ( isset( $data['color'] ) ) {
+            $update['color'] = sanitize_hex_color( $data['color'] ) ?: '#cccccc';
+        }
+        if ( isset( $data['activo'] ) ) {
+            $update['activo'] = (int) (bool) $data['activo'];
+        }
+        if ( isset( $data['ocultar_por_defecto'] ) ) {
+            $update['ocultar_por_defecto'] = (int) (bool) $data['ocultar_por_defecto'];
+        }
+        if ( empty( $update ) ) return false;
+        return $wpdb->update( $wpdb->prefix . 'gpi_estados', $update, [ 'id' => absint( $id ) ] ) !== false;
+    }
+
+    public static function delete_estado_item( $id ) {
+        global $wpdb;
+        $id    = absint( $id );
+        $count = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}gpi_pedidos WHERE estado_id = %d", $id
+        ) );
+        if ( $count > 0 ) {
+            return new WP_Error( 'en_uso', "No se puede eliminar: {$count} pedido(s) usan este estado." );
+        }
+        $wpdb->delete( $wpdb->prefix . 'gpi_historial', [ 'estado_id' => $id ] );
+        return $wpdb->delete( $wpdb->prefix . 'gpi_estados', [ 'id' => $id ] ) !== false;
+    }
+
+    public static function mover_estado( $id, $direction ) {
+        global $wpdb;
+        $id        = absint( $id );
+        $table     = $wpdb->prefix . 'gpi_estados';
+        $current   = $wpdb->get_row( $wpdb->prepare( "SELECT id, orden FROM $table WHERE id = %d", $id ) );
+        if ( ! $current ) return false;
+
+        if ( $direction === 'up' ) {
+            $swap = $wpdb->get_row( $wpdb->prepare(
+                "SELECT id, orden FROM $table WHERE orden < %d ORDER BY orden DESC LIMIT 1",
+                $current->orden
+            ) );
+        } else {
+            $swap = $wpdb->get_row( $wpdb->prepare(
+                "SELECT id, orden FROM $table WHERE orden > %d ORDER BY orden ASC LIMIT 1",
+                $current->orden
+            ) );
+        }
+
+        if ( ! $swap ) return false;
+
+        // Use transaction to ensure both updates happen atomically
+        $wpdb->query( 'START TRANSACTION' );
+        $result1 = $wpdb->update( $table, [ 'orden' => $swap->orden ],    [ 'id' => $current->id ] );
+        $result2 = $wpdb->update( $table, [ 'orden' => $current->orden ], [ 'id' => $swap->id ] );
+        
+        if ( $result1 !== false && $result2 !== false ) {
+            $wpdb->query( 'COMMIT' );
+            return true;
+        } else {
+            $wpdb->query( 'ROLLBACK' );
+            return false;
+        }
+    }
+
+    // ── ETIQUETAS ─────────────────────────────────────────────────────────
+
+    public static function get_etiquetas( $solo_activos = true ) {
+        global $wpdb;
+        $where = $solo_activos ? 'WHERE activo = 1' : '';
+        return $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}gpi_etiquetas $where ORDER BY nombre ASC" );
+    }
+
+    public static function get_etiqueta( $id ) {
+        global $wpdb;
+        return $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}gpi_etiquetas WHERE id = %d", $id
+        ) );
+    }
+
+    public static function insert_etiqueta( $data ) {
+        global $wpdb;
+        return $wpdb->insert( $wpdb->prefix . 'gpi_etiquetas', [
+            'nombre' => sanitize_text_field( $data['nombre'] ),
+            'color'  => sanitize_hex_color( $data['color'] ?? '#6b7280' ) ?: '#6b7280',
+            'activo' => isset( $data['activo'] ) ? (int) (bool) $data['activo'] : 1,
+        ] );
+    }
+
+    public static function update_etiqueta( $id, $data ) {
+        global $wpdb;
+        $update = [];
+        if ( isset( $data['nombre'] ) ) {
+            $update['nombre'] = sanitize_text_field( $data['nombre'] );
+        }
+        if ( isset( $data['color'] ) ) {
+            $update['color'] = sanitize_hex_color( $data['color'] ) ?: '#6b7280';
+        }
+        if ( isset( $data['activo'] ) ) {
+            $update['activo'] = (int) (bool) $data['activo'];
+        }
+        if ( empty( $update ) ) return false;
+        return $wpdb->update( $wpdb->prefix . 'gpi_etiquetas', $update, [ 'id' => absint( $id ) ] ) !== false;
+    }
+
+    public static function delete_etiqueta( $id ) {
+        global $wpdb;
+        $id    = absint( $id );
+        $count = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}gpi_pedidos WHERE etiqueta_id = %d", $id
+        ) );
+        if ( $count > 0 ) {
+            return new WP_Error( 'en_uso', "No se puede eliminar: {$count} pedido(s) usan esta etiqueta." );
+        }
+        return $wpdb->delete( $wpdb->prefix . 'gpi_etiquetas', [ 'id' => $id ] ) !== false;
     }
 }

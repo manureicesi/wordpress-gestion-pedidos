@@ -1,6 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) exit; ?>
 <div class="wrap gpi-wrap">
-  <h1 class="wp-heading-inline">📋 Gestión de Pedidos</h1>
+  <h1 class="wp-heading-inline">Gestión de Pedidos</h1>
   <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-nuevo-pedido' ) ); ?>" class="page-title-action">+ Nuevo Pedido</a>
   <hr class="wp-header-end">
 
@@ -9,6 +9,7 @@
     <form method="get" class="gpi-filter-form">
       <input type="hidden" name="page" value="gpi-pedidos">
       <input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Buscar pedido, solicitante…" class="gpi-search-input">
+
       <select name="estado" class="gpi-select">
         <option value="">— Todos los estados —</option>
         <?php foreach ( $estados as $e ) : ?>
@@ -17,17 +18,48 @@
           </option>
         <?php endforeach; ?>
       </select>
+
+      <?php if ( ! empty( $etiquetas ) ) : ?>
+      <select name="etiqueta" class="gpi-select">
+        <option value="">— Todas las etiquetas —</option>
+        <?php foreach ( $etiquetas as $et ) : ?>
+          <option value="<?php echo esc_attr( $et->id ); ?>" <?php selected( $etiqueta_id, $et->id ); ?>>
+            <?php echo esc_html( $et->nombre ); ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <?php endif; ?>
+
+      <label class="gpi-check-label">
+        <input type="checkbox" name="mostrar_listos" value="1" <?php checked( $mostrar_listos ); ?>>
+        Mostrar todos
+      </label>
+
       <button type="submit" class="button">Filtrar</button>
-      <?php if ( $search || $estado_id ) : ?>
+      <?php if ( $search || $estado_id || $etiqueta_id || $mostrar_listos ) : ?>
         <a href="<?php echo esc_url( admin_url( 'admin.php?page=gpi-pedidos' ) ); ?>" class="button">✕ Limpiar</a>
       <?php endif; ?>
     </form>
-    <span class="gpi-total"><?php echo esc_html( $total ); ?> pedido(s)</span>
+
+    <div class="gpi-filter-right">
+      <span class="gpi-total"><?php echo esc_html( $total ); ?> pedido(s)</span>
+      <a href="#" id="gpi-btn-csv" class="button gpi-btn-export"
+         data-estado="<?php echo esc_attr( $estado_id ); ?>"
+         data-etiqueta="<?php echo esc_attr( $etiqueta_id ); ?>"
+         data-search="<?php echo esc_attr( $search ); ?>"
+         data-listos="<?php echo $mostrar_listos ? '1' : '0'; ?>">
+        Descargar CSV
+      </a>
+    </div>
   </div>
 
   <!-- Tabla -->
   <?php if ( empty( $pedidos ) ) : ?>
-    <p class="gpi-empty">No se encontraron pedidos.</p>
+    <p class="gpi-empty">No se encontraron pedidos.
+      <?php if ( ! $mostrar_listos && ! $estado_id ) : ?>
+        <a href="<?php echo esc_url( add_query_arg( [ 'page' => 'gpi-pedidos', 'mostrar_listos' => 1 ], admin_url( 'admin.php' ) ) ); ?>">Mostrar pedidos listos</a>
+      <?php endif; ?>
+    </p>
   <?php else : ?>
   <div class="gpi-table-wrapper">
   <table class="gpi-table">
@@ -37,6 +69,7 @@
         <th>Solicitante</th>
         <th>Contacto</th>
         <th>Descripción</th>
+        <th>Etiqueta</th>
         <th>Estado</th>
         <th>Presupuesto</th>
         <th>Fecha</th>
@@ -57,6 +90,13 @@
           <?php if ( $p->email ) : ?><div class="small" style="color:#6b7280;"><?php echo esc_html( $p->email ); ?></div><?php endif; ?>
         </td>
         <td class="gpi-desc"><?php echo esc_html( wp_trim_words( $p->descripcion, 12 ) ); ?></td>
+        <td>
+          <?php if ( $p->etiqueta_nombre ) : ?>
+            <?php echo GPI_Estados::badge( $p->etiqueta_nombre, $p->etiqueta_color ); ?>
+          <?php else : ?>
+            <span style="color:#d1d5db">—</span>
+          <?php endif; ?>
+        </td>
         <td>
           <div class="gpi-estado-cell">
             <span class="gpi-badge gpi-badge-<?php echo esc_attr( $p->id ); ?>"
@@ -102,7 +142,14 @@
   <div class="gpi-pagination">
     <?php for ( $i = 1; $i <= $pages; $i++ ) : ?>
       <?php
-        $url = add_query_arg( [ 'page' => 'gpi-pedidos', 'paged' => $i, 's' => $search, 'estado' => $estado_id ], admin_url( 'admin.php' ) );
+        $url = add_query_arg( [
+            'page'          => 'gpi-pedidos',
+            'paged'         => $i,
+            's'             => $search,
+            'estado'        => $estado_id,
+            'etiqueta'      => $etiqueta_id,
+            'mostrar_listos'=> $mostrar_listos ? 1 : '',
+        ], admin_url( 'admin.php' ) );
       ?>
       <a href="<?php echo esc_url( $url ); ?>" class="<?php echo $i === $paged ? 'current' : ''; ?>"><?php echo $i; ?></a>
     <?php endfor; ?>

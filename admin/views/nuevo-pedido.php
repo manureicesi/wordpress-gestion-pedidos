@@ -1,6 +1,6 @@
 <?php if ( ! defined( 'ABSPATH' ) ) exit; ?>
 <div class="wrap gpi-wrap">
-  <h1>➕ Nuevo Pedido</h1>
+  <h1>Nuevo Pedido</h1>
   <hr class="wp-header-end">
 
   <div class="gpi-card">
@@ -37,6 +37,20 @@
         <label for="presupuesto">Presupuesto (€)</label>
         <input type="number" id="presupuesto" name="presupuesto" step="0.01" min="0" placeholder="0.00">
       </div>
+
+      <?php if ( ! empty( $etiquetas ) ) : ?>
+      <div class="gpi-form-row">
+        <label for="etiqueta_id">Etiqueta</label>
+        <select id="etiqueta_id" name="etiqueta_id" class="gpi-select">
+          <option value="0">— Sin etiqueta —</option>
+          <?php foreach ( $etiquetas as $et ) : ?>
+            <option value="<?php echo esc_attr( $et->id ); ?>">
+              <?php echo esc_html( $et->nombre ); ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
 
       <div class="gpi-form-row">
         <label>
