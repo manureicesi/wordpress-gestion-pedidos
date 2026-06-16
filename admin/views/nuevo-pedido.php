@@ -10,7 +10,10 @@
 
       <div class="gpi-form-row">
         <label for="solicitante">Solicitante <span class="required">*</span></label>
-        <input type="text" id="solicitante" name="solicitante" required maxlength="150" placeholder="Nombre de quien realiza el pedido">
+        <div class="gpi-ac-wrap">
+          <input type="text" id="solicitante" name="solicitante" required maxlength="150" placeholder="Nombre de quien realiza el pedido" autocomplete="off">
+          <div id="gpi-solicitante-ac" class="gpi-ac-dropdown"></div>
+        </div>
       </div>
 
       <div class="gpi-form-row">

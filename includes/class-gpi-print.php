@@ -12,7 +12,8 @@ class GPI_Print {
         if ( ! $pedido ) wp_die( 'Pedido no encontrado.' );
 
         $tracking_url = GPI_Pedido::get_tracking_url( $pedido->numero );
-        $qr_base64    = GPI_QR::base64( $tracking_url, 150 );
+        $mostrar_qr   = get_option( 'gpi_mostrar_qr', '1' ) === '1';
+        $qr_base64    = $mostrar_qr ? GPI_QR::base64( $tracking_url, 150 ) : '';
         $historial    = GPI_Database::get_historial( $pedido->id );
         $site_name    = get_bloginfo( 'name' );
 

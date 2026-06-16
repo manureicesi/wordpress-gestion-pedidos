@@ -268,6 +268,20 @@ class GPI_Database {
         return $result !== false;
     }
 
+    public static function search_solicitantes( $q ) {
+        global $wpdb;
+        $like = '%' . $wpdb->esc_like( $q ) . '%';
+        return $wpdb->get_results( $wpdb->prepare(
+            "SELECT solicitante, telefono, email, MAX(creado_en) AS ultimo
+             FROM {$wpdb->prefix}gpi_pedidos
+             WHERE solicitante LIKE %s
+             GROUP BY solicitante, telefono, email
+             ORDER BY ultimo DESC
+             LIMIT 10",
+            $like
+        ) );
+    }
+
     public static function delete_pedido( $id ) {
         global $wpdb;
         $wpdb->delete( $wpdb->prefix . 'gpi_historial', [ 'pedido_id' => absint( $id ) ] );

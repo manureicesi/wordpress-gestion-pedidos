@@ -46,6 +46,17 @@
             <p class="description">Página con el shortcode <code>[gpi_estado_pedido]</code>. Se incluye en el QR del resguardo.</p>
           </td>
         </tr>
+        <tr>
+          <th scope="row">Código QR en el ticket</th>
+          <td>
+            <?php $mostrar_qr = get_option( 'gpi_mostrar_qr', '1' ); ?>
+            <label>
+              <input type="checkbox" name="gpi_mostrar_qr" value="1" <?php checked( $mostrar_qr, '1' ); ?>>
+              Mostrar código QR en el resguardo imprimible
+            </label>
+            <p class="description">La URL de seguimiento siempre aparece en el ticket aunque el QR esté desactivado.</p>
+          </td>
+        </tr>
       </table>
 
       <p class="submit">

@@ -45,6 +45,54 @@
     });
   });
 
+  // ── Autocomplete solicitante (nuevo pedido) ──────────────────────────────
+  var gpiAcTimer = null;
+
+  $('#solicitante').on('input', function () {
+    var q     = $(this).val();
+    var $list = $('#gpi-solicitante-ac');
+    clearTimeout(gpiAcTimer);
+
+    if (q.length < 3) {
+      $list.hide().empty();
+      return;
+    }
+
+    gpiAcTimer = setTimeout(function () {
+      $.post(GPI.ajax_url, {
+        action: 'gpi_buscar_solicitantes',
+        nonce:   GPI.nonce,
+        q:       q,
+      }, function (res) {
+        $list.empty();
+        if (res.success && res.data.length) {
+          res.data.forEach(function (c) {
+            var parts = [c.solicitante];
+            if (c.telefono) parts.push(c.telefono);
+            if (c.email)    parts.push(c.email);
+            var $item = $('<div class="gpi-ac-item">').text(parts.join(' — ')).data('contact', c);
+            $item.on('click', function () {
+              $('#solicitante').val(c.solicitante);
+              $('#telefono').val(c.telefono || '');
+              $('#email').val(c.email || '');
+              $list.hide().empty();
+            });
+            $list.append($item);
+          });
+          $list.show();
+        } else {
+          $list.hide();
+        }
+      });
+    }, 300);
+  });
+
+  $(document).on('click', function (e) {
+    if (!$(e.target).closest('.gpi-ac-wrap').length) {
+      $('#gpi-solicitante-ac').hide();
+    }
+  });
+
   // ── Editar pedido ───────────────────────────────────────────────────────
   $('#gpi-form-editar').on('submit', function (e) {
     e.preventDefault();

@@ -21,8 +21,11 @@ class GPI_Admin {
         add_action( 'wp_ajax_gpi_mover_estado',       [ $this, 'ajax_mover_estado' ] );
 
         // Etiquetas AJAX
-        add_action( 'wp_ajax_gpi_save_etiqueta',   [ $this, 'ajax_save_etiqueta' ] );
-        add_action( 'wp_ajax_gpi_delete_etiqueta', [ $this, 'ajax_delete_etiqueta' ] );
+        add_action( 'wp_ajax_gpi_save_etiqueta',       [ $this, 'ajax_save_etiqueta' ] );
+        add_action( 'wp_ajax_gpi_delete_etiqueta',     [ $this, 'ajax_delete_etiqueta' ] );
+
+        // Autocomplete solicitantes
+        add_action( 'wp_ajax_gpi_buscar_solicitantes', [ $this, 'ajax_buscar_solicitantes' ] );
 
         // Admin-post
         add_action( 'admin_post_gpi_save_settings', [ $this, 'save_settings' ] );
@@ -319,6 +322,15 @@ class GPI_Admin {
         }
     }
 
+    public function ajax_buscar_solicitantes() {
+        $this->verify_nonce();
+        $q = sanitize_text_field( wp_unslash( $_POST['q'] ?? '' ) );
+        if ( strlen( $q ) < 3 ) {
+            wp_send_json_success( [] );
+        }
+        wp_send_json_success( GPI_Database::search_solicitantes( $q ) );
+    }
+
     public function ajax_delete_etiqueta() {
         $this->verify_nonce();
         $id     = absint( $_POST['id'] ?? 0 );
@@ -394,6 +406,7 @@ class GPI_Admin {
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die( 'Sin permiso.' );
         update_option( 'gpi_ticket_ancho',     sanitize_text_field( wp_unslash( $_POST['gpi_ticket_ancho']    ?? '80mm' ) ) );
         update_option( 'gpi_tracking_page_id', absint( $_POST['gpi_tracking_page_id'] ?? 0 ) );
+        update_option( 'gpi_mostrar_qr',       isset( $_POST['gpi_mostrar_qr'] ) ? '1' : '0' );
         wp_redirect( admin_url( 'admin.php?page=gpi-ajustes&updated=1' ) );
         exit;
     }

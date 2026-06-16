@@ -191,12 +191,14 @@
 <!-- ── QR ── -->
 <hr class="divider">
 <div class="qr-block">
-  <?php if ( $qr_base64 ) : ?>
-    <img src="<?php echo esc_attr( $qr_base64 ); ?>" alt="QR Seguimiento" width="130" height="130">
-  <?php else : ?>
-    <img src="<?php echo esc_url( GPI_QR::url( $tracking_url, 130 ) ); ?>" alt="QR Seguimiento" width="130" height="130">
+  <?php if ( $mostrar_qr ) : ?>
+    <?php if ( $qr_base64 ) : ?>
+      <img src="<?php echo esc_attr( $qr_base64 ); ?>" alt="QR Seguimiento" width="130" height="130">
+    <?php else : ?>
+      <img src="<?php echo esc_url( GPI_QR::url( $tracking_url, 130 ) ); ?>" alt="QR Seguimiento" width="130" height="130">
+    <?php endif; ?>
+    <div class="qr-label">Escanea para ver el estado del pedido</div>
   <?php endif; ?>
-  <div class="qr-label">Escanea para ver el estado del pedido</div>
   <div class="qr-label small"><?php echo esc_html( $tracking_url ); ?></div>
 </div>
 
