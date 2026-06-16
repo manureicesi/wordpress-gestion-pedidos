@@ -3,7 +3,7 @@
  * Plugin Name:       Gestión de Pedidos Internos
  * Plugin URI:        https://reices.com/gestion-pedidos-internos
  * Description:       Sistema de gestión de pedidos internos con control de estados, impresión de resguardos en impresora de tickets y shortcode de seguimiento.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Author:            Manuel Reices
  * Text Domain:       gpi
  * Domain Path:       /languages
