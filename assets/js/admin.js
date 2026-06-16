@@ -160,8 +160,11 @@
 
   // ── Toggle pagado ───────────────────────────────────────────────────────
   $(document).on('click', '.gpi-btn-pagado', function () {
-    var $btn = $(this);
-    var id   = $btn.data('id');
+    var $btn   = $(this);
+    var id     = $btn.data('id');
+    var pagado = $btn.hasClass('pagado');
+    var msg    = pagado ? '¿Marcar este pedido como NO pagado?' : '¿Marcar este pedido como pagado?';
+    if (!confirm(msg)) return;
 
     $.post(GPI.ajax_url, {
       action:    'gpi_toggle_pagado',
