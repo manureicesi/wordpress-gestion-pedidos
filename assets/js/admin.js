@@ -219,17 +219,17 @@
   // ── Exportar CSV ─────────────────────────────────────────────────────────
   $('#gpi-btn-csv').on('click', function (e) {
     e.preventDefault();
-    var $btn     = $(this);
-    var estado   = $btn.data('estado')   || '';
-    var etiqueta = $btn.data('etiqueta') || '';
-    var search   = $btn.data('search')   || '';
-    var listos   = $btn.data('listos')   || '0';
+    var $form    = $('.gpi-filter-form');
+    var estado   = $form.find('[name=estado]').val()   || '';
+    var etiqueta = $form.find('[name=etiqueta]').val() || '';
+    var search   = $form.find('[name=s]').val()        || '';
+    var listos   = $form.find('[name=mostrar_listos]').is(':checked');
 
     var url = GPI.export_url;
     if (estado)    url += '&estado='   + encodeURIComponent(estado);
     if (etiqueta)  url += '&etiqueta=' + encodeURIComponent(etiqueta);
     if (search)    url += '&s='        + encodeURIComponent(search);
-    if (listos === '1') url += '&mostrar_listos=1';
+    if (listos) url += '&mostrar_listos=1';
 
     window.location.href = url;
   });

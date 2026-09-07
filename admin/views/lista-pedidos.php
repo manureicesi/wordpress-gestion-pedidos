@@ -43,11 +43,7 @@
 
     <div class="gpi-filter-right">
       <span class="gpi-total"><?php echo esc_html( $total ); ?> pedido(s)</span>
-      <a href="#" id="gpi-btn-csv" class="button gpi-btn-export"
-         data-estado="<?php echo esc_attr( $estado_id ); ?>"
-         data-etiqueta="<?php echo esc_attr( $etiqueta_id ); ?>"
-         data-search="<?php echo esc_attr( $search ); ?>"
-         data-listos="<?php echo $mostrar_listos ? '1' : '0'; ?>">
+      <a href="#" id="gpi-btn-csv" class="button gpi-btn-export">
         Descargar CSV
       </a>
     </div>
