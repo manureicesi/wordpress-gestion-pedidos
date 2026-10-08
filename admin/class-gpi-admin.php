@@ -15,6 +15,11 @@ class GPI_Admin {
         add_action( 'wp_ajax_gpi_editar_pedido',   [ $this, 'ajax_editar_pedido' ] );
         add_action( 'wp_ajax_gpi_toggle_pagado',   [ $this, 'ajax_toggle_pagado' ] );
 
+        // Impresión ESC/POS vía QZ Tray
+        add_action( 'wp_ajax_gpi_ticket_data',      [ $this, 'ajax_ticket_data' ] );
+        add_action( 'wp_ajax_gpi_qz_certificado',   [ $this, 'ajax_qz_certificado' ] );
+        add_action( 'wp_ajax_gpi_qz_firmar',        [ $this, 'ajax_qz_firmar' ] );
+
         // Estados AJAX
         add_action( 'wp_ajax_gpi_save_estado_item',   [ $this, 'ajax_save_estado_item' ] );
         add_action( 'wp_ajax_gpi_delete_estado_item', [ $this, 'ajax_delete_estado_item' ] );
@@ -59,13 +64,76 @@ class GPI_Admin {
     public function enqueue_assets( $hook ) {
         if ( strpos( $hook, 'gpi-' ) === false ) return;
         wp_enqueue_style( 'gpi-admin', GPI_PLUGIN_URL . 'assets/css/admin.css', [], GPI_VERSION );
-        wp_enqueue_script( 'gpi-admin', GPI_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery' ], GPI_VERSION, true );
+
+        $deps = [ 'jquery' ];
+        if ( $this->is_print_screen( $hook ) ) {
+            // QZ Tray solo se carga (y por tanto solo se conecta) en pantallas que imprimen.
+            wp_enqueue_script( 'gpi-qz-tray', GPI_PLUGIN_URL . 'assets/vendor/qz-tray/qz-tray.js', [], '2.2.6', true );
+            wp_enqueue_script( 'gpi-escpos', GPI_PLUGIN_URL . 'assets/js/gpi-escpos.js', [], GPI_VERSION, true );
+            wp_enqueue_script( 'gpi-qz', GPI_PLUGIN_URL . 'assets/js/gpi-qz.js', [ 'jquery', 'gpi-qz-tray' ], GPI_VERSION, true );
+            $deps = [ 'jquery', 'gpi-escpos', 'gpi-qz' ];
+        }
+
+        wp_enqueue_script( 'gpi-admin', GPI_PLUGIN_URL . 'assets/js/admin.js', $deps, GPI_VERSION, true );
         wp_localize_script( 'gpi-admin', 'GPI', [
             'ajax_url'   => admin_url( 'admin-ajax.php' ),
             'nonce'      => wp_create_nonce( 'gpi_nonce' ),
             'print_url'  => admin_url( 'admin-ajax.php?action=gpi_imprimir_ticket&nonce=' . wp_create_nonce( 'gpi_print' ) ),
             'export_url' => admin_url( 'admin-post.php?action=gpi_export_csv&_wpnonce=' . wp_create_nonce( 'gpi_export_csv' ) ),
+            'qz'         => self::get_print_settings(),
         ] );
+    }
+
+    /**
+     * Pantallas donde se imprime: lista, edición y ajustes (prueba). En "Nuevo pedido"
+     * solo si la impresión automática al crear está activada.
+     */
+    private function is_print_screen( $hook ) {
+        $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        if ( in_array( $page, [ 'gpi-pedidos', 'gpi-editar-pedido', 'gpi-ajustes' ], true ) ) {
+            return true;
+        }
+        if ( 'gpi-nuevo-pedido' === $page ) {
+            $s = self::get_print_settings();
+            return 'qz' === $s['metodo'] && $s['auto'];
+        }
+        return false;
+    }
+
+    /**
+     * Ajustes de impresión térmica (QZ Tray / ESC/POS) normalizados.
+     * Se exponen al JS; no contienen datos sensibles.
+     */
+    public static function get_print_settings() {
+        return [
+            'metodo'       => get_option( 'gpi_print_metodo', 'navegador' ) === 'qz' ? 'qz' : 'navegador',
+            'impresora'    => (string) get_option( 'gpi_qz_impresora', '' ),
+            'columnas'     => absint( get_option( 'gpi_qz_columnas', 42 ) ) ?: 42,
+            'codificacion' => (string) get_option( 'gpi_qz_codificacion', 'cp858' ),
+            'codepage'     => (string) get_option( 'gpi_qz_codepage', '' ),
+            'cajon'        => get_option( 'gpi_qz_cajon', '0' ) === '1',
+            'copias'       => absint( get_option( 'gpi_qz_copias', 1 ) ) ?: 1,
+            'auto'         => get_option( 'gpi_qz_auto', '0' ) === '1',
+            'barcode'      => get_option( 'gpi_qz_barcode', '0' ) === '1',
+            'qr'           => get_option( 'gpi_mostrar_qr', '1' ) === '1',
+            'iva'          => (float) get_option( 'gpi_qz_iva', 0 ),
+            'comercio'     => (string) ( get_option( 'gpi_ticket_comercio', '' ) ?: get_bloginfo( 'name' ) ),
+            'cabecera'     => (string) get_option( 'gpi_ticket_cabecera', '' ),
+            'pie'          => (string) get_option( 'gpi_ticket_pie', 'Conserve este resguardo para consultar su pedido.' ),
+            'signing'      => self::qz_signing_enabled(),
+        ];
+    }
+
+    /**
+     * Firma de QZ Tray activa si en wp-config.php se definen las rutas (fuera del
+     * directorio público) del certificado y la clave privada:
+     *   define( 'GPI_QZ_CERT_FILE', '/ruta/digital-certificate.txt' );
+     *   define( 'GPI_QZ_KEY_FILE',  '/ruta/private-key.pem' );
+     *   define( 'GPI_QZ_KEY_PASS',  '' ); // opcional
+     */
+    private static function qz_signing_enabled() {
+        return defined( 'GPI_QZ_CERT_FILE' ) && defined( 'GPI_QZ_KEY_FILE' )
+            && is_readable( GPI_QZ_CERT_FILE ) && is_readable( GPI_QZ_KEY_FILE );
     }
 
     // ── PÁGINAS ───────────────────────────────────────────────────────────
@@ -220,6 +288,71 @@ class GPI_Admin {
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die( 'Sin permiso.' );
         $id = absint( $_GET['pedido_id'] ?? 0 );
         GPI_Print::render_ticket( $id );
+    }
+
+    // ── AJAX — IMPRESIÓN QZ TRAY ──────────────────────────────────────────
+
+    /** Datos del pedido para construir el ticket ESC/POS en el navegador. */
+    public function ajax_ticket_data() {
+        $this->verify_nonce();
+        $pedido = GPI_Database::get_pedido( absint( $_POST['pedido_id'] ?? 0 ) );
+        if ( ! $pedido ) {
+            wp_send_json_error( 'Pedido no encontrado.' );
+        }
+
+        $historial = array_map( function ( $h ) {
+            return [
+                'fecha'  => date_i18n( 'd/m/Y H:i', strtotime( $h->fecha ) ),
+                'estado' => (string) $h->estado_nombre,
+                'nota'   => (string) $h->nota,
+            ];
+        }, array_slice( GPI_Database::get_historial( $pedido->id ), -5 ) );
+
+        wp_send_json_success( [
+            'numero'       => $pedido->numero,
+            'estado'       => (string) $pedido->estado_nombre,
+            'fecha'        => date_i18n( 'd/m/Y H:i', strtotime( $pedido->creado_en ) ),
+            'solicitante'  => $pedido->solicitante,
+            'telefono'     => (string) $pedido->telefono,
+            'email'        => (string) $pedido->email,
+            'etiqueta'     => (string) ( $pedido->etiqueta_nombre ?? '' ),
+            'descripcion'  => $pedido->descripcion,
+            'presupuesto'  => (float) $pedido->presupuesto,
+            'pagado'       => (bool) $pedido->pagado,
+            'historial'    => $historial,
+            'tracking_url' => GPI_Pedido::get_tracking_url( $pedido->numero ),
+            'impreso'      => 'Impreso: ' . date_i18n( 'd/m/Y H:i' ),
+        ] );
+    }
+
+    /** Certificado público para QZ Tray (solo si la firma está configurada). */
+    public function ajax_qz_certificado() {
+        $this->verify_nonce();
+        if ( ! self::qz_signing_enabled() ) {
+            wp_send_json_error( 'Firma QZ no configurada.' );
+        }
+        wp_send_json_success( file_get_contents( GPI_QZ_CERT_FILE ) );
+    }
+
+    /** Firma SHA512 de la petición de QZ Tray con la clave privada del servidor. */
+    public function ajax_qz_firmar() {
+        $this->verify_nonce();
+        if ( ! self::qz_signing_enabled() ) {
+            wp_send_json_error( 'Firma QZ no configurada.' );
+        }
+        // QZ envía un hash hexadecimal; no se sanitiza más allá de validar el formato.
+        $request = (string) wp_unslash( $_POST['request'] ?? '' );
+        if ( ! preg_match( '/^[A-Fa-f0-9]{16,256}$/', $request ) ) {
+            wp_send_json_error( 'Petición de firma no válida.' );
+        }
+        $key = openssl_pkey_get_private(
+            file_get_contents( GPI_QZ_KEY_FILE ),
+            defined( 'GPI_QZ_KEY_PASS' ) ? GPI_QZ_KEY_PASS : ''
+        );
+        if ( ! $key || ! openssl_sign( $request, $signature, $key, OPENSSL_ALGO_SHA512 ) ) {
+            wp_send_json_error( 'No se pudo firmar la petición (revisa la clave privada).' );
+        }
+        wp_send_json_success( base64_encode( $signature ) );
     }
 
     // ── AJAX — ESTADOS ────────────────────────────────────────────────────
@@ -407,6 +540,24 @@ class GPI_Admin {
         update_option( 'gpi_ticket_ancho',     sanitize_text_field( wp_unslash( $_POST['gpi_ticket_ancho']    ?? '80mm' ) ) );
         update_option( 'gpi_tracking_page_id', absint( $_POST['gpi_tracking_page_id'] ?? 0 ) );
         update_option( 'gpi_mostrar_qr',       isset( $_POST['gpi_mostrar_qr'] ) ? '1' : '0' );
+
+        // Impresora térmica (QZ Tray / ESC/POS)
+        $metodo = sanitize_key( wp_unslash( $_POST['gpi_print_metodo'] ?? 'navegador' ) );
+        $codif  = sanitize_key( wp_unslash( $_POST['gpi_qz_codificacion'] ?? 'cp858' ) );
+        $cp     = trim( sanitize_text_field( wp_unslash( $_POST['gpi_qz_codepage'] ?? '' ) ) );
+        update_option( 'gpi_print_metodo',    in_array( $metodo, [ 'qz', 'navegador' ], true ) ? $metodo : 'navegador' );
+        update_option( 'gpi_qz_impresora',    sanitize_text_field( wp_unslash( $_POST['gpi_qz_impresora'] ?? '' ) ) );
+        update_option( 'gpi_qz_columnas',     min( 64, max( 16, absint( $_POST['gpi_qz_columnas'] ?? 42 ) ) ) );
+        update_option( 'gpi_qz_codificacion', in_array( $codif, [ 'cp858', 'cp850', 'cp1252' ], true ) ? $codif : 'cp858' );
+        update_option( 'gpi_qz_codepage',     '' === $cp ? '' : (string) min( 255, absint( $cp ) ) );
+        update_option( 'gpi_qz_cajon',        isset( $_POST['gpi_qz_cajon'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_copias',       min( 10, max( 1, absint( $_POST['gpi_qz_copias'] ?? 1 ) ) ) );
+        update_option( 'gpi_qz_auto',         isset( $_POST['gpi_qz_auto'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_barcode',      isset( $_POST['gpi_qz_barcode'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_iva',          min( 100, max( 0, floatval( str_replace( ',', '.', wp_unslash( $_POST['gpi_qz_iva'] ?? '0' ) ) ) ) ) );
+        update_option( 'gpi_ticket_comercio', sanitize_text_field( wp_unslash( $_POST['gpi_ticket_comercio'] ?? '' ) ) );
+        update_option( 'gpi_ticket_cabecera', sanitize_textarea_field( wp_unslash( $_POST['gpi_ticket_cabecera'] ?? '' ) ) );
+        update_option( 'gpi_ticket_pie',      sanitize_textarea_field( wp_unslash( $_POST['gpi_ticket_pie'] ?? '' ) ) );
         wp_redirect( admin_url( 'admin.php?page=gpi-ajustes&updated=1' ) );
         exit;
     }

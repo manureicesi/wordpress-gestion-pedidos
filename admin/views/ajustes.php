@@ -59,6 +59,95 @@
         </tr>
       </table>
 
+      <!-- ── Impresora térmica (QZ Tray / ESC/POS) ─────────────────────── -->
+      <?php $qz = GPI_Admin::get_print_settings(); ?>
+      <h2 class="gpi-section-title" id="gpi-impresora">Impresora térmica (QZ Tray)</h2>
+      <p class="description">
+        Imprime el resguardo en ESC/POS crudo a través de <a href="https://qz.io/download/" target="_blank" rel="noopener">QZ Tray</a>
+        instalado en el PC de la impresora. Si QZ Tray no está disponible se ofrece el diálogo de impresión del navegador.
+      </p>
+      <table class="form-table" id="gpi-qz-settings">
+        <tr>
+          <th scope="row"><label for="gpi_print_metodo">Método de impresión</label></th>
+          <td>
+            <select name="gpi_print_metodo" id="gpi_print_metodo">
+              <option value="qz" <?php selected( $qz['metodo'], 'qz' ); ?>>QZ Tray — ESC/POS directo (recomendado)</option>
+              <option value="navegador" <?php selected( $qz['metodo'], 'navegador' ); ?>>Diálogo de impresión del navegador</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_impresora">Nombre de la impresora</label></th>
+          <td>
+            <input type="text" name="gpi_qz_impresora" id="gpi_qz_impresora" class="regular-text" value="<?php echo esc_attr( $qz['impresora'] ); ?>" placeholder="Ej.: POS-80C">
+            <button type="button" class="button" id="gpi-qz-detectar">Detectar impresoras</button>
+            <select id="gpi-qz-lista" style="display:none;max-width:320px"></select>
+            <p class="description">Nombre exacto tal como lo ve el sistema operativo / QZ Tray.
+              Estado de QZ Tray: <span id="gpi-qz-estado" class="gpi-qz-estado">sin conectar</span></p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_columnas">Ancho en caracteres</label></th>
+          <td>
+            <input type="number" name="gpi_qz_columnas" id="gpi_qz_columnas" min="16" max="64" step="1" value="<?php echo esc_attr( $qz['columnas'] ); ?>" style="width:80px">
+            <p class="description">Habitual: 48 o 42 en 80 mm, 32 en 58 mm (fuente A). Usa la regla de la página de prueba para comprobarlo.</p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_codificacion">Codificación</label></th>
+          <td>
+            <select name="gpi_qz_codificacion" id="gpi_qz_codificacion">
+              <?php foreach ( [ 'cp858' => 'CP858 — Multilingüe con € (recomendada)', 'cp850' => 'CP850 — Multilingüe (sin €)', 'cp1252' => 'Windows-1252' ] as $val => $label ) : ?>
+                <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $qz['codificacion'], $val ); ?>><?php echo esc_html( $label ); ?></option>
+              <?php endforeach; ?>
+            </select>
+            <label style="margin-left:10px">Tabla ESC t (avanzado):
+              <input type="number" name="gpi_qz_codepage" id="gpi_qz_codepage" min="0" max="255" value="<?php echo esc_attr( $qz['codepage'] ); ?>" placeholder="auto" style="width:80px">
+            </label>
+            <p class="description">Déjalo en «auto» (CP858 = 19, CP850 = 2, 1252 = 16 en Epson). Si los acentos salen mal, consulta el manual de tu impresora y pon aquí el número de tabla.</p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_copias">Copias</label></th>
+          <td><input type="number" name="gpi_qz_copias" id="gpi_qz_copias" min="1" max="10" value="<?php echo esc_attr( $qz['copias'] ); ?>" style="width:80px"></td>
+        </tr>
+        <tr>
+          <th scope="row">Opciones</th>
+          <td>
+            <label><input type="checkbox" name="gpi_qz_cajon" id="gpi_qz_cajon" value="1" <?php checked( $qz['cajon'] ); ?>> Abrir cajón portamonedas al imprimir</label><br>
+            <label><input type="checkbox" name="gpi_qz_auto" id="gpi_qz_auto" value="1" <?php checked( $qz['auto'] ); ?>> Imprimir automáticamente al crear un pedido</label><br>
+            <label><input type="checkbox" name="gpi_qz_barcode" id="gpi_qz_barcode" value="1" <?php checked( $qz['barcode'] ); ?>> Código de barras con el número de pedido</label>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_iva">IVA incluido (%)</label></th>
+          <td>
+            <input type="number" name="gpi_qz_iva" id="gpi_qz_iva" min="0" max="100" step="0.01" value="<?php echo esc_attr( $qz['iva'] ); ?>" style="width:80px">
+            <p class="description">Desglose base / IVA del presupuesto en el ticket. 0 = sin desglose.</p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_comercio">Nombre del comercio</label></th>
+          <td><input type="text" name="gpi_ticket_comercio" id="gpi_ticket_comercio" class="regular-text" value="<?php echo esc_attr( $qz['comercio'] ); ?>"></td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_cabecera">Cabecera</label></th>
+          <td><textarea name="gpi_ticket_cabecera" id="gpi_ticket_cabecera" rows="3" class="large-text" placeholder="CIF, dirección, teléfono…"><?php echo esc_textarea( $qz['cabecera'] ); ?></textarea></td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_pie">Pie</label></th>
+          <td><textarea name="gpi_ticket_pie" id="gpi_ticket_pie" rows="2" class="large-text"><?php echo esc_textarea( $qz['pie'] ); ?></textarea></td>
+        </tr>
+        <tr>
+          <th scope="row">Prueba</th>
+          <td>
+            <button type="button" class="button button-secondary" id="gpi-qz-prueba">🖨️ Imprimir página de prueba</button>
+            <p class="description">Usa los valores actuales del formulario, aunque no estén guardados.</p>
+            <div id="gpi-qz-resultado" aria-live="polite"></div>
+          </td>
+        </tr>
+      </table>
+
       <p class="submit">
         <button type="submit" class="button button-primary">Guardar ajustes</button>
       </p>
