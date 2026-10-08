@@ -19,6 +19,7 @@ PLUGIN=gestion-pedidos-internos && DEST="$(pwd)/${PLUGIN}.zip" && zip -r "$DEST"
 - **Historial de estados** con fecha, usuario y nota
 - **Resguardo de ticket térmico** optimizado para impresoras de 58mm / 80mm / 112mm
 - **QR en el resguardo** con enlace a la página de seguimiento
+- **Impresión ESC/POS directa con QZ Tray** (acentos, columnas, QR, código de barras, corte, cajón), con página de prueba y fallback al diálogo del navegador
 - **Shortcode `[gpi_estado_pedido]`** para consulta pública por número de pedido
 - **Filtros y búsqueda** en el panel de administración
 
@@ -169,4 +170,21 @@ gestion-pedidos-internos/
     │   └── public.css             # Estilos del shortcode
     └── js/
         └── admin.js               # AJAX del panel (jQuery)
+```
+
+---
+
+## Impresión directa con QZ Tray
+
+1. Instala y abre [QZ Tray](https://qz.io/download/) en el PC con la impresora térmica.
+2. **Pedidos → Ajustes → Impresora térmica**: método «QZ Tray», pulsa **Detectar impresoras** y elige la tuya.
+3. Pulsa **Imprimir página de prueba** y ajusta columnas y codificación hasta que la regla y los acentos salgan bien. Después, **Guardar ajustes**.
+
+Sin certificado, QZ Tray pedirá permiso («Allow») en cada conexión. Para evitarlo, genera un certificado
+(QZ Tray → Advanced → Site Manager / o el certificado comprado a QZ) y define en `wp-config.php` rutas fuera del directorio público:
+
+```php
+define( 'GPI_QZ_CERT_FILE', '/ruta/segura/digital-certificate.txt' );
+define( 'GPI_QZ_KEY_FILE',  '/ruta/segura/private-key.pem' );
+// define( 'GPI_QZ_KEY_PASS', 'contraseña' ); // si la clave está cifrada
 ```
