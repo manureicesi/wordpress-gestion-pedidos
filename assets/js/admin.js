@@ -266,12 +266,27 @@
 
   // ── AJUSTES: Impresora térmica (QZ Tray) ────────────────────────────────
 
+  /** Columnas automáticas según el ancho de papel elegido en el formulario. */
+  function gpiQzColumnasAuto() {
+    var mapa = $('#gpi_qz_columnas').data('auto') || {};
+    return mapa[$('#gpi_ticket_ancho').val()] || 42;
+  }
+
+  function gpiQzActualizarColumnasAuto() {
+    var manual = $.trim($('#gpi_qz_columnas').val());
+    $('#gpi-qz-columnas-auto').text(manual
+      ? 'Valor manual: ' + manual + ' (automático sería ' + gpiQzColumnasAuto() + ')'
+      : 'Automático: ' + gpiQzColumnasAuto() + ' caracteres');
+  }
+  $('#gpi_ticket_ancho, #gpi_qz_columnas').on('change input', gpiQzActualizarColumnasAuto);
+  if ($('#gpi_qz_columnas').length) gpiQzActualizarColumnasAuto();
+
   /** Valores actuales del formulario (sin necesidad de guardar). */
   function gpiQzFormCfg() {
     return {
       metodo:       'qz',
       impresora:    $.trim($('#gpi_qz_impresora').val()),
-      columnas:     $('#gpi_qz_columnas').val(),
+      columnas:     $.trim($('#gpi_qz_columnas').val()) || gpiQzColumnasAuto(),
       codificacion: $('#gpi_qz_codificacion').val(),
       codepage:     $.trim($('#gpi_qz_codepage').val()),
       copias:       $('#gpi_qz_copias').val(),

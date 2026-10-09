@@ -180,8 +180,20 @@ gestion-pedidos-internos/
 2. **Pedidos → Ajustes → Impresora térmica**: método «QZ Tray», pulsa **Detectar impresoras** y elige la tuya.
 3. Pulsa **Imprimir página de prueba** y ajusta columnas y codificación hasta que la regla y los acentos salgan bien. Después, **Guardar ajustes**.
 
-Sin certificado, QZ Tray pedirá permiso («Allow») en cada conexión. Para evitarlo, genera un certificado
-(QZ Tray → Advanced → Site Manager / o el certificado comprado a QZ) y define en `wp-config.php` rutas fuera del directorio público:
+El campo **Caracteres por línea** no es el tamaño del ticket: es cuántas letras caben en una línea.
+Si se deja vacío se calcula a partir del **Ancho del papel** (58 mm → 32, 80 mm → 42, 112 mm → 64).
+
+### Certificado (evitar el aviso «Allow» de QZ Tray)
+
+Sin certificado, QZ Tray pedirá permiso en cada conexión. En **Ajustes → Certificado QZ Tray** (solo administradores):
+
+1. **Generar certificado nuevo** (RSA 2048, autofirmado, 10 años).
+2. **Descargar certificado** en el PC de la impresora y copiarlo como `override.crt` en la carpeta de QZ Tray
+   (Windows: `C:\Program Files\QZ Tray\override.crt`). Reiniciar QZ Tray.
+3. En el primer aviso marcar *Remember this decision* → *Allow*.
+
+También se puede pegar un certificado propio (p. ej. comprado a QZ Industries) o, para no guardar la clave en la base de datos,
+definir ficheros fuera del directorio público en `wp-config.php` (tienen prioridad):
 
 ```php
 define( 'GPI_QZ_CERT_FILE', '/ruta/segura/digital-certificate.txt' );
