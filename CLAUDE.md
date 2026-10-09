@@ -35,6 +35,9 @@ assets/
   css/admin.css                     Estilos admin
   css/public.css                    Estilos frontend
   js/admin.js                       JS admin (jQuery AJAX)
+  js/gpi-escpos.js                  Generador ESC/POS (ticket real + página de prueba, mismo código)
+  js/gpi-qz.js                      Conexión QZ Tray, reconexión, errores traducidos
+  vendor/qz-tray/qz-tray.js         Librería QZ Tray 2.2.6 (local, sin CDN)
 ```
 
 ## Tablas en la BD
@@ -64,10 +67,14 @@ assets/
 - `gpi_save_estado_item` — crear/actualizar estado
 - `gpi_delete_estado_item` — eliminar estado (rechaza si tiene pedidos)
 - `gpi_mover_estado` — reordenar estado (up/down)
+- `gpi_ticket_data` — datos JSON de un pedido para el ticket ESC/POS
+- `gpi_qz_certificado` / `gpi_qz_firmar` — firma de QZ Tray (certificado de wp-config.php o de Ajustes, ver `GPI_Admin::get_qz_credentials()`)
 
 ## admin-post actions
 - `gpi_save_settings` — guardar ajustes generales
 - `gpi_export_csv` — descargar CSV de pedidos filtrados
+- `gpi_qz_cert` — generar / guardar / borrar certificado QZ (`manage_options`)
+- `gpi_qz_descargar_cert` — descargar `override.crt` (`manage_options`)
 
 ## Flujo de datos principal
 1. `plugins_loaded` → `gpi_run()` → `GPI_Activator::maybe_upgrade()` (migraciones) + init Admin + Public
@@ -77,6 +84,10 @@ assets/
 ## Opciones de WordPress (wp_options)
 - `gpi_ticket_ancho` — ancho del ticket: '58mm', '80mm', '112mm'
 - `gpi_tracking_page_id` — ID de página con el shortcode de tracking
+- `gpi_print_metodo` — 'qz' (ESC/POS vía QZ Tray) o 'navegador'
+- `gpi_qz_impresora`, `gpi_qz_columnas` (vacío = automático según `gpi_ticket_ancho`), `gpi_qz_codificacion` (cp858|cp850|cp1252), `gpi_qz_codepage` (override ESC t), `gpi_qz_cajon`, `gpi_qz_copias`, `gpi_qz_auto`, `gpi_qz_barcode`, `gpi_qz_iva`
+- `gpi_ticket_comercio`, `gpi_ticket_cabecera`, `gpi_ticket_pie` — textos del ticket ESC/POS
+- `gpi_qz_cert`, `gpi_qz_key` — certificado y clave privada PEM (autoload = no; la clave nunca se envía al navegador)
 
 ## Patrones a seguir
 - Todo acceso a DB pasa por `GPI_Database` (métodos estáticos)
@@ -91,3 +102,9 @@ assets/
 - Para verlos: usar filtro de estado específico o checkbox "Mostrar listos" en la lista
 - El CSV exportado respeta los mismos filtros que la vista actual (estado, etiqueta, búsqueda, mostrar_listos)
 - Las etiquetas son opcionales en los pedidos (etiqueta_id nullable)
+
+## Impresión térmica (QZ Tray)
+- `GPI_Admin::get_print_settings()` normaliza los ajustes y se exponen al JS como `GPI.qz`
+- QZ Tray solo se encola en lista, editar y ajustes (y en nuevo pedido si hay impresión automática)
+- Cualquier cambio en el formato del ticket va en `assets/js/gpi-escpos.js` (bloques compartidos por `ticketPedido` y `paginaPrueba`)
+- Si QZ falla se muestra un aviso con botón "Imprimir con el navegador" (popup HTML clásico de `GPI_Print`)

@@ -7,6 +7,21 @@
     <div class="notice notice-success is-dismissible"><p>Ajustes guardados.</p></div>
   <?php endif; ?>
 
+  <?php
+  $gpi_msg = isset( $_GET['gpi_msg'] ) ? sanitize_key( wp_unslash( $_GET['gpi_msg'] ) ) : '';
+  $gpi_msgs = [
+      'cert_generado' => 'Certificado generado. Descárgalo e instálalo en QZ Tray (ver instrucciones abajo).',
+      'cert_guardado' => 'Certificado guardado.',
+      'cert_borrado'  => 'Certificado eliminado. QZ Tray volverá a pedir permiso al conectar.',
+  ];
+  if ( isset( $gpi_msgs[ $gpi_msg ] ) ) : ?>
+    <div class="notice notice-success is-dismissible"><p><?php echo esc_html( $gpi_msgs[ $gpi_msg ] ); ?></p></div>
+  <?php elseif ( 'cert_error' === $gpi_msg ) :
+      $gpi_cert_error = get_transient( 'gpi_qz_cert_error_' . get_current_user_id() );
+      delete_transient( 'gpi_qz_cert_error_' . get_current_user_id() ); ?>
+    <div class="notice notice-error is-dismissible"><p><?php echo esc_html( $gpi_cert_error ?: 'No se pudo guardar el certificado.' ); ?></p></div>
+  <?php endif; ?>
+
   <!-- ── General ─────────────────────────────────────────────────────── -->
   <h2 class="gpi-section-title">General</h2>
   <div class="gpi-card">
@@ -16,7 +31,7 @@
 
       <table class="form-table">
         <tr>
-          <th scope="row"><label for="gpi_ticket_ancho">Ancho del ticket</label></th>
+          <th scope="row"><label for="gpi_ticket_ancho">Ancho del papel</label></th>
           <td>
             <select name="gpi_ticket_ancho" id="gpi_ticket_ancho">
               <?php
@@ -27,7 +42,7 @@
               }
               ?>
             </select>
-            <p class="description">Ajusta según el papel de tu impresora de tickets.</p>
+            <p class="description">Ancho físico del rollo de tu impresora de tickets. Determina también los caracteres por línea en la impresión con QZ Tray.</p>
           </td>
         </tr>
         <tr>
@@ -59,11 +74,189 @@
         </tr>
       </table>
 
+      <!-- ── Impresora térmica (QZ Tray / ESC/POS) ─────────────────────── -->
+      <?php $qz = GPI_Admin::get_print_settings(); ?>
+      <h2 class="gpi-section-title" id="gpi-impresora">Impresora térmica (QZ Tray)</h2>
+      <p class="description">
+        Imprime el resguardo en ESC/POS crudo a través de <a href="https://qz.io/download/" target="_blank" rel="noopener">QZ Tray</a>
+        instalado en el PC de la impresora. Si QZ Tray no está disponible se ofrece el diálogo de impresión del navegador.
+      </p>
+      <table class="form-table" id="gpi-qz-settings">
+        <tr>
+          <th scope="row"><label for="gpi_print_metodo">Método de impresión</label></th>
+          <td>
+            <select name="gpi_print_metodo" id="gpi_print_metodo">
+              <option value="qz" <?php selected( $qz['metodo'], 'qz' ); ?>>QZ Tray — ESC/POS directo (recomendado)</option>
+              <option value="navegador" <?php selected( $qz['metodo'], 'navegador' ); ?>>Diálogo de impresión del navegador</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_impresora">Nombre de la impresora</label></th>
+          <td>
+            <input type="text" name="gpi_qz_impresora" id="gpi_qz_impresora" class="regular-text" value="<?php echo esc_attr( $qz['impresora'] ); ?>" placeholder="Ej.: POS-80C">
+            <button type="button" class="button" id="gpi-qz-detectar">Detectar impresoras</button>
+            <select id="gpi-qz-lista" style="display:none;max-width:320px"></select>
+            <p class="description">Nombre exacto tal como lo ve el sistema operativo / QZ Tray.
+              Estado de QZ Tray: <span id="gpi-qz-estado" class="gpi-qz-estado">sin conectar</span></p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_columnas">Caracteres por línea</label></th>
+          <td>
+            <input type="number" name="gpi_qz_columnas" id="gpi_qz_columnas" min="16" max="64" step="1"
+              value="<?php echo esc_attr( $qz['columnas_manual'] ); ?>"
+              placeholder="<?php echo esc_attr( 'auto' ); ?>"
+              data-auto="<?php echo esc_attr( wp_json_encode( GPI_Admin::COLUMNAS_POR_PAPEL ) ); ?>" style="width:80px">
+            <span id="gpi-qz-columnas-auto" class="description"></span>
+            <p class="description">
+              No es el tamaño del ticket: es cuántas letras caben en una línea con el papel elegido arriba.
+              Déjalo vacío para usar el valor automático (58 mm → 32, 80 mm → 42, 112 mm → 64).
+              Si en la página de prueba la regla se corta o sobra espacio, escribe aquí el valor correcto
+              (muchas impresoras de 80 mm admiten 48).
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_codificacion">Codificación</label></th>
+          <td>
+            <select name="gpi_qz_codificacion" id="gpi_qz_codificacion">
+              <?php foreach ( [ 'cp858' => 'CP858 — Multilingüe con € (recomendada)', 'cp850' => 'CP850 — Multilingüe (sin €)', 'cp1252' => 'Windows-1252' ] as $val => $label ) : ?>
+                <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $qz['codificacion'], $val ); ?>><?php echo esc_html( $label ); ?></option>
+              <?php endforeach; ?>
+            </select>
+            <label style="margin-left:10px">Tabla ESC t (avanzado):
+              <input type="number" name="gpi_qz_codepage" id="gpi_qz_codepage" min="0" max="255" value="<?php echo esc_attr( $qz['codepage'] ); ?>" placeholder="auto" style="width:80px">
+            </label>
+            <p class="description">Déjalo en «auto» (CP858 = 19, CP850 = 2, 1252 = 16 en Epson). Si los acentos salen mal, consulta el manual de tu impresora y pon aquí el número de tabla.</p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_copias">Copias</label></th>
+          <td><input type="number" name="gpi_qz_copias" id="gpi_qz_copias" min="1" max="10" value="<?php echo esc_attr( $qz['copias'] ); ?>" style="width:80px"></td>
+        </tr>
+        <tr>
+          <th scope="row">Opciones</th>
+          <td>
+            <label><input type="checkbox" name="gpi_qz_cajon" id="gpi_qz_cajon" value="1" <?php checked( $qz['cajon'] ); ?>> Abrir cajón portamonedas al imprimir</label><br>
+            <label><input type="checkbox" name="gpi_qz_auto" id="gpi_qz_auto" value="1" <?php checked( $qz['auto'] ); ?>> Imprimir automáticamente al crear un pedido</label><br>
+            <label><input type="checkbox" name="gpi_qz_barcode" id="gpi_qz_barcode" value="1" <?php checked( $qz['barcode'] ); ?>> Código de barras con el número de pedido</label>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_qz_iva">IVA incluido (%)</label></th>
+          <td>
+            <input type="number" name="gpi_qz_iva" id="gpi_qz_iva" min="0" max="100" step="0.01" value="<?php echo esc_attr( $qz['iva'] ); ?>" style="width:80px">
+            <p class="description">Desglose base / IVA del presupuesto en el ticket. 0 = sin desglose.</p>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_comercio">Nombre del comercio</label></th>
+          <td><input type="text" name="gpi_ticket_comercio" id="gpi_ticket_comercio" class="regular-text" value="<?php echo esc_attr( $qz['comercio'] ); ?>"></td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_cabecera">Cabecera</label></th>
+          <td><textarea name="gpi_ticket_cabecera" id="gpi_ticket_cabecera" rows="3" class="large-text" placeholder="CIF, dirección, teléfono…"><?php echo esc_textarea( $qz['cabecera'] ); ?></textarea></td>
+        </tr>
+        <tr>
+          <th scope="row"><label for="gpi_ticket_pie">Pie</label></th>
+          <td><textarea name="gpi_ticket_pie" id="gpi_ticket_pie" rows="2" class="large-text"><?php echo esc_textarea( $qz['pie'] ); ?></textarea></td>
+        </tr>
+        <tr>
+          <th scope="row">Prueba</th>
+          <td>
+            <button type="button" class="button button-secondary" id="gpi-qz-prueba">🖨️ Imprimir página de prueba</button>
+            <p class="description">Usa los valores actuales del formulario, aunque no estén guardados.</p>
+            <div id="gpi-qz-resultado" aria-live="polite"></div>
+          </td>
+        </tr>
+      </table>
+
       <p class="submit">
         <button type="submit" class="button button-primary">Guardar ajustes</button>
       </p>
     </form>
   </div>
+
+  <?php if ( current_user_can( 'manage_options' ) ) :
+      $cert_info = GPI_Admin::get_qz_cert_info(); ?>
+  <!-- ── Certificado QZ Tray (solo administradores) ─────────────────── -->
+  <h2 class="gpi-section-title" id="gpi-certificado" style="margin-top:28px">Certificado QZ Tray (opcional)</h2>
+  <div class="gpi-card">
+    <p class="description">
+      Sin certificado, QZ Tray muestra un aviso «Allow / Block» cada vez que se conecta.
+      Con un certificado, las peticiones se firman en el servidor y, una vez instalado en QZ Tray, imprime sin preguntar.
+    </p>
+
+    <p><strong>Estado:</strong>
+      <?php if ( 'wp-config' === $cert_info['origen'] ) : ?>
+        <span class="gpi-cert-ok">Configurado en wp-config.php</span> (tiene prioridad; los cambios de aquí no se usarán).
+      <?php elseif ( 'ajustes' === $cert_info['origen'] ) : ?>
+        <span class="<?php echo esc_attr( $cert_info['caducado'] ? 'gpi-cert-ko' : 'gpi-cert-ok' ); ?>">
+          <?php echo esc_html( $cert_info['caducado'] ? 'Certificado caducado' : 'Certificado activo' ); ?>
+        </span>
+      <?php else : ?>
+        <span class="gpi-cert-ko">Sin certificado</span> — QZ Tray pedirá permiso al conectar.
+      <?php endif; ?>
+      <?php if ( $cert_info['cn'] ) : ?>
+        · <?php echo esc_html( $cert_info['cn'] ); ?> · válido hasta <?php echo esc_html( $cert_info['caduca'] ); ?>
+      <?php endif; ?>
+    </p>
+
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+      <input type="hidden" name="action" value="gpi_qz_cert">
+      <?php wp_nonce_field( 'gpi_qz_cert' ); ?>
+
+      <p>
+        <button type="submit" name="op" value="generar" class="button button-primary"
+          <?php if ( $cert_info['origen'] ) : ?>onclick="return confirm('Se sustituirá el certificado actual y tendrás que volver a instalarlo en QZ Tray. ¿Continuar?');"<?php endif; ?>>
+          Generar certificado nuevo
+        </button>
+        <?php if ( $cert_info['origen'] ) : ?>
+          <a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=gpi_qz_descargar_cert' ), 'gpi_qz_descargar_cert' ) ); ?>">⬇ Descargar certificado (override.crt)</a>
+        <?php endif; ?>
+        <?php if ( 'ajustes' === $cert_info['origen'] ) : ?>
+          <button type="submit" name="op" value="borrar" class="button button-link-delete"
+            onclick="return confirm('¿Eliminar el certificado? QZ Tray volverá a pedir permiso.');">Eliminar certificado</button>
+        <?php endif; ?>
+      </p>
+
+      <details class="gpi-cert-instrucciones" <?php echo 'cert_generado' === $gpi_msg ? 'open' : ''; ?>>
+        <summary><strong>Cómo instalar el certificado en el PC de la impresora</strong></summary>
+        <ol>
+          <li>Pulsa <em>Descargar certificado</em> en ese PC: se descarga <code>override.crt</code>.</li>
+          <li>Cópialo a la carpeta de instalación de QZ Tray:
+            <ul>
+              <li>Windows: <code>C:\Program Files\QZ Tray\override.crt</code></li>
+              <li>macOS: <code>/Applications/QZ Tray.app/Contents/Resources/override.crt</code></li>
+              <li>Linux: <code>/opt/qz-tray/override.crt</code></li>
+            </ul>
+          </li>
+          <li>Cierra QZ Tray (icono de la bandeja → <em>Exit</em>) y vuelve a abrirlo.</li>
+          <li>Recarga esta página e imprime la página de prueba: en el primer aviso marca <em>Remember this decision</em> y pulsa <em>Allow</em>. Ya no volverá a preguntar.</li>
+        </ol>
+        <p class="description">Si generas un certificado nuevo, tendrás que repetir estos pasos.</p>
+      </details>
+
+      <details class="gpi-cert-instrucciones">
+        <summary><strong>Usar un certificado propio (p. ej. comprado a QZ Industries)</strong></summary>
+        <p>
+          <label for="gpi_qz_cert">Certificado (<code>digital-certificate.txt</code>, PEM)</label><br>
+          <textarea name="gpi_qz_cert" id="gpi_qz_cert" rows="6" class="large-text code" placeholder="-----BEGIN CERTIFICATE-----"><?php
+            echo esc_textarea( 'ajustes' === $cert_info['origen'] ? get_option( 'gpi_qz_cert', '' ) : '' );
+          ?></textarea>
+        </p>
+        <p>
+          <label for="gpi_qz_key">Clave privada (<code>private-key.pem</code>, PEM sin contraseña)</label><br>
+          <textarea name="gpi_qz_key" id="gpi_qz_key" rows="6" class="large-text code" autocomplete="off"
+            placeholder="<?php echo esc_attr( 'ajustes' === $cert_info['origen'] ? 'Clave guardada (no se muestra). Déjalo vacío para conservarla.' : '-----BEGIN PRIVATE KEY-----' ); ?>"></textarea>
+        </p>
+        <p><button type="submit" name="op" value="guardar" class="button">Guardar certificado</button></p>
+        <p class="description">La clave privada se guarda en la base de datos y nunca se muestra ni se envía al navegador. Para mayor seguridad puedes usar ficheros fuera de la web con <code>GPI_QZ_CERT_FILE</code> / <code>GPI_QZ_KEY_FILE</code> en wp-config.php.</p>
+      </details>
+    </form>
+  </div>
+  <?php endif; ?>
 
   <!-- ── Estados ─────────────────────────────────────────────────────── -->
   <h2 class="gpi-section-title" style="margin-top:28px">Gestión de Estados</h2>

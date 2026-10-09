@@ -15,6 +15,11 @@ class GPI_Admin {
         add_action( 'wp_ajax_gpi_editar_pedido',   [ $this, 'ajax_editar_pedido' ] );
         add_action( 'wp_ajax_gpi_toggle_pagado',   [ $this, 'ajax_toggle_pagado' ] );
 
+        // Impresión ESC/POS vía QZ Tray
+        add_action( 'wp_ajax_gpi_ticket_data',      [ $this, 'ajax_ticket_data' ] );
+        add_action( 'wp_ajax_gpi_qz_certificado',   [ $this, 'ajax_qz_certificado' ] );
+        add_action( 'wp_ajax_gpi_qz_firmar',        [ $this, 'ajax_qz_firmar' ] );
+
         // Estados AJAX
         add_action( 'wp_ajax_gpi_save_estado_item',   [ $this, 'ajax_save_estado_item' ] );
         add_action( 'wp_ajax_gpi_delete_estado_item', [ $this, 'ajax_delete_estado_item' ] );
@@ -30,6 +35,8 @@ class GPI_Admin {
         // Admin-post
         add_action( 'admin_post_gpi_save_settings', [ $this, 'save_settings' ] );
         add_action( 'admin_post_gpi_export_csv',    [ $this, 'export_csv' ] );
+        add_action( 'admin_post_gpi_qz_cert',          [ $this, 'save_qz_cert' ] );
+        add_action( 'admin_post_gpi_qz_descargar_cert', [ $this, 'download_qz_cert' ] );
     }
 
     // ── MENÚS ─────────────────────────────────────────────────────────────
@@ -59,13 +66,154 @@ class GPI_Admin {
     public function enqueue_assets( $hook ) {
         if ( strpos( $hook, 'gpi-' ) === false ) return;
         wp_enqueue_style( 'gpi-admin', GPI_PLUGIN_URL . 'assets/css/admin.css', [], GPI_VERSION );
-        wp_enqueue_script( 'gpi-admin', GPI_PLUGIN_URL . 'assets/js/admin.js', [ 'jquery' ], GPI_VERSION, true );
+
+        $deps = [ 'jquery' ];
+        if ( $this->is_print_screen( $hook ) ) {
+            // QZ Tray solo se carga (y por tanto solo se conecta) en pantallas que imprimen.
+            wp_enqueue_script( 'gpi-qz-tray', GPI_PLUGIN_URL . 'assets/vendor/qz-tray/qz-tray.js', [], '2.2.6', true );
+            wp_enqueue_script( 'gpi-escpos', GPI_PLUGIN_URL . 'assets/js/gpi-escpos.js', [], GPI_VERSION, true );
+            wp_enqueue_script( 'gpi-qz', GPI_PLUGIN_URL . 'assets/js/gpi-qz.js', [ 'jquery', 'gpi-qz-tray' ], GPI_VERSION, true );
+            $deps = [ 'jquery', 'gpi-escpos', 'gpi-qz' ];
+        }
+
+        wp_enqueue_script( 'gpi-admin', GPI_PLUGIN_URL . 'assets/js/admin.js', $deps, GPI_VERSION, true );
         wp_localize_script( 'gpi-admin', 'GPI', [
             'ajax_url'   => admin_url( 'admin-ajax.php' ),
             'nonce'      => wp_create_nonce( 'gpi_nonce' ),
             'print_url'  => admin_url( 'admin-ajax.php?action=gpi_imprimir_ticket&nonce=' . wp_create_nonce( 'gpi_print' ) ),
             'export_url' => admin_url( 'admin-post.php?action=gpi_export_csv&_wpnonce=' . wp_create_nonce( 'gpi_export_csv' ) ),
+            'qz'         => self::get_print_settings(),
         ] );
+    }
+
+    /**
+     * Pantallas donde se imprime: lista, edición y ajustes (prueba). En "Nuevo pedido"
+     * solo si la impresión automática al crear está activada.
+     */
+    private function is_print_screen( $hook ) {
+        $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        if ( in_array( $page, [ 'gpi-pedidos', 'gpi-editar-pedido', 'gpi-ajustes' ], true ) ) {
+            return true;
+        }
+        if ( 'gpi-nuevo-pedido' === $page ) {
+            $s = self::get_print_settings();
+            return 'qz' === $s['metodo'] && $s['auto'];
+        }
+        return false;
+    }
+
+    /**
+     * Ajustes de impresión térmica (QZ Tray / ESC/POS) normalizados.
+     * Se exponen al JS; no contienen datos sensibles.
+     */
+    public static function get_print_settings() {
+        return [
+            'metodo'       => get_option( 'gpi_print_metodo', 'navegador' ) === 'qz' ? 'qz' : 'navegador',
+            'impresora'    => (string) get_option( 'gpi_qz_impresora', '' ),
+            'columnas'     => self::get_columnas(),
+            'columnas_manual' => (string) get_option( 'gpi_qz_columnas', '' ),
+            'codificacion' => (string) get_option( 'gpi_qz_codificacion', 'cp858' ),
+            'codepage'     => (string) get_option( 'gpi_qz_codepage', '' ),
+            'cajon'        => get_option( 'gpi_qz_cajon', '0' ) === '1',
+            'copias'       => absint( get_option( 'gpi_qz_copias', 1 ) ) ?: 1,
+            'auto'         => get_option( 'gpi_qz_auto', '0' ) === '1',
+            'barcode'      => get_option( 'gpi_qz_barcode', '0' ) === '1',
+            'qr'           => get_option( 'gpi_mostrar_qr', '1' ) === '1',
+            'iva'          => (float) get_option( 'gpi_qz_iva', 0 ),
+            'comercio'     => (string) ( get_option( 'gpi_ticket_comercio', '' ) ?: get_bloginfo( 'name' ) ),
+            'cabecera'     => (string) get_option( 'gpi_ticket_cabecera', '' ),
+            'pie'          => (string) get_option( 'gpi_ticket_pie', 'Conserve este resguardo para consultar su pedido.' ),
+            'signing'      => self::qz_signing_enabled(),
+        ];
+    }
+
+    /** Caracteres por línea según el ancho del papel (fuente A de 12 puntos). */
+    const COLUMNAS_POR_PAPEL = [ '58mm' => 32, '80mm' => 42, '112mm' => 64 ];
+
+    /**
+     * Columnas efectivas del ticket ESC/POS: el valor manual si existe; si no,
+     * el que corresponde al ancho de papel configurado.
+     */
+    public static function get_columnas() {
+        $manual = absint( get_option( 'gpi_qz_columnas', '' ) );
+        if ( $manual ) return $manual;
+        $papel = get_option( 'gpi_ticket_ancho', '80mm' );
+        return self::COLUMNAS_POR_PAPEL[ $papel ] ?? 42;
+    }
+
+    /**
+     * Certificado y clave privada para firmar las peticiones a QZ Tray.
+     * Prioridad: constantes en wp-config.php (ficheros fuera del directorio público)
+     *   define( 'GPI_QZ_CERT_FILE', '/ruta/digital-certificate.txt' );
+     *   define( 'GPI_QZ_KEY_FILE',  '/ruta/private-key.pem' );
+     *   define( 'GPI_QZ_KEY_PASS',  '' ); // opcional
+     * y, si no están, el certificado generado o pegado en Ajustes (gpi_qz_cert / gpi_qz_key).
+     *
+     * @return array{origen:string,cert:string,key:string,pass:string}
+     */
+    public static function get_qz_credentials() {
+        if ( defined( 'GPI_QZ_CERT_FILE' ) && defined( 'GPI_QZ_KEY_FILE' )
+            && is_readable( GPI_QZ_CERT_FILE ) && is_readable( GPI_QZ_KEY_FILE ) ) {
+            return [
+                'origen' => 'wp-config',
+                'cert'   => (string) file_get_contents( GPI_QZ_CERT_FILE ),
+                'key'    => (string) file_get_contents( GPI_QZ_KEY_FILE ),
+                'pass'   => defined( 'GPI_QZ_KEY_PASS' ) ? (string) GPI_QZ_KEY_PASS : '',
+            ];
+        }
+        $cert = (string) get_option( 'gpi_qz_cert', '' );
+        $key  = (string) get_option( 'gpi_qz_key', '' );
+        if ( $cert && $key ) {
+            return [ 'origen' => 'ajustes', 'cert' => $cert, 'key' => $key, 'pass' => '' ];
+        }
+        return [ 'origen' => '', 'cert' => '', 'key' => '', 'pass' => '' ];
+    }
+
+    private static function qz_signing_enabled() {
+        return '' !== self::get_qz_credentials()['origen'];
+    }
+
+    /** Datos legibles del certificado para mostrarlos en Ajustes (sin la clave). */
+    public static function get_qz_cert_info() {
+        $cred = self::get_qz_credentials();
+        $info = [ 'origen' => $cred['origen'], 'cn' => '', 'caduca' => '', 'caducado' => false ];
+        if ( $cred['cert'] && function_exists( 'openssl_x509_parse' ) ) {
+            $x = openssl_x509_parse( $cred['cert'] );
+            if ( $x ) {
+                $info['cn']       = $x['subject']['CN'] ?? '';
+                $info['caduca']   = date_i18n( 'd/m/Y', $x['validTo_time_t'] );
+                $info['caducado'] = $x['validTo_time_t'] < time();
+            }
+        }
+        return $info;
+    }
+
+    /**
+     * Genera un par clave RSA 2048 + certificado autofirmado (10 años, SHA-256),
+     * equivalente al que crea el asistente de QZ Tray.
+     *
+     * @return array|WP_Error [ 'cert' => PEM, 'key' => PEM ]
+     */
+    private static function generar_qz_cert() {
+        if ( ! function_exists( 'openssl_pkey_new' ) ) {
+            return new WP_Error( 'openssl', 'La extensión OpenSSL de PHP no está disponible en el servidor.' );
+        }
+        $conf = [ 'private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA, 'digest_alg' => 'sha256' ];
+        $key  = openssl_pkey_new( $conf );
+        if ( ! $key ) {
+            return new WP_Error( 'openssl', 'No se pudo generar la clave: ' . openssl_error_string() );
+        }
+        $host = wp_parse_url( home_url(), PHP_URL_HOST ) ?: 'localhost';
+        $dn   = [
+            'commonName'       => $host,
+            'organizationName' => substr( get_bloginfo( 'name' ) ?: $host, 0, 64 ),
+        ];
+        $csr  = openssl_csr_new( $dn, $key, $conf );
+        $x509 = $csr ? openssl_csr_sign( $csr, null, $key, 3650, $conf, random_int( 1, PHP_INT_MAX ) ) : false;
+        if ( ! $x509 || ! openssl_x509_export( $x509, $cert_pem ) || ! openssl_pkey_export( $key, $key_pem ) ) {
+            return new WP_Error( 'openssl', 'No se pudo generar el certificado: ' . openssl_error_string() );
+        }
+        return [ 'cert' => $cert_pem, 'key' => $key_pem ];
     }
 
     // ── PÁGINAS ───────────────────────────────────────────────────────────
@@ -220,6 +368,70 @@ class GPI_Admin {
         if ( ! current_user_can( 'manage_woocommerce' ) ) wp_die( 'Sin permiso.' );
         $id = absint( $_GET['pedido_id'] ?? 0 );
         GPI_Print::render_ticket( $id );
+    }
+
+    // ── AJAX — IMPRESIÓN QZ TRAY ──────────────────────────────────────────
+
+    /** Datos del pedido para construir el ticket ESC/POS en el navegador. */
+    public function ajax_ticket_data() {
+        $this->verify_nonce();
+        $pedido = GPI_Database::get_pedido( absint( $_POST['pedido_id'] ?? 0 ) );
+        if ( ! $pedido ) {
+            wp_send_json_error( 'Pedido no encontrado.' );
+        }
+
+        $historial = array_map( function ( $h ) {
+            return [
+                'fecha'  => date_i18n( 'd/m/Y H:i', strtotime( $h->fecha ) ),
+                'estado' => (string) $h->estado_nombre,
+                'nota'   => (string) $h->nota,
+            ];
+        }, array_slice( GPI_Database::get_historial( $pedido->id ), -5 ) );
+
+        wp_send_json_success( [
+            'numero'       => $pedido->numero,
+            'estado'       => (string) $pedido->estado_nombre,
+            'fecha'        => date_i18n( 'd/m/Y H:i', strtotime( $pedido->creado_en ) ),
+            'solicitante'  => $pedido->solicitante,
+            'telefono'     => (string) $pedido->telefono,
+            'email'        => (string) $pedido->email,
+            'etiqueta'     => (string) ( $pedido->etiqueta_nombre ?? '' ),
+            'descripcion'  => $pedido->descripcion,
+            'presupuesto'  => (float) $pedido->presupuesto,
+            'pagado'       => (bool) $pedido->pagado,
+            'historial'    => $historial,
+            'tracking_url' => GPI_Pedido::get_tracking_url( $pedido->numero ),
+            'impreso'      => 'Impreso: ' . date_i18n( 'd/m/Y H:i' ),
+        ] );
+    }
+
+    /** Certificado público para QZ Tray (solo si la firma está configurada). */
+    public function ajax_qz_certificado() {
+        $this->verify_nonce();
+        $cred = self::get_qz_credentials();
+        if ( ! $cred['origen'] ) {
+            wp_send_json_error( 'Firma QZ no configurada.' );
+        }
+        wp_send_json_success( $cred['cert'] );
+    }
+
+    /** Firma SHA512 de la petición de QZ Tray con la clave privada del servidor. */
+    public function ajax_qz_firmar() {
+        $this->verify_nonce();
+        $cred = self::get_qz_credentials();
+        if ( ! $cred['origen'] ) {
+            wp_send_json_error( 'Firma QZ no configurada.' );
+        }
+        // QZ envía un hash hexadecimal; no se sanitiza más allá de validar el formato.
+        $request = (string) wp_unslash( $_POST['request'] ?? '' );
+        if ( ! preg_match( '/^[A-Fa-f0-9]{16,256}$/', $request ) ) {
+            wp_send_json_error( 'Petición de firma no válida.' );
+        }
+        $key = openssl_pkey_get_private( $cred['key'], $cred['pass'] );
+        if ( ! $key || ! openssl_sign( $request, $signature, $key, OPENSSL_ALGO_SHA512 ) ) {
+            wp_send_json_error( 'No se pudo firmar la petición (revisa la clave privada).' );
+        }
+        wp_send_json_success( base64_encode( $signature ) );
     }
 
     // ── AJAX — ESTADOS ────────────────────────────────────────────────────
@@ -407,7 +619,101 @@ class GPI_Admin {
         update_option( 'gpi_ticket_ancho',     sanitize_text_field( wp_unslash( $_POST['gpi_ticket_ancho']    ?? '80mm' ) ) );
         update_option( 'gpi_tracking_page_id', absint( $_POST['gpi_tracking_page_id'] ?? 0 ) );
         update_option( 'gpi_mostrar_qr',       isset( $_POST['gpi_mostrar_qr'] ) ? '1' : '0' );
+
+        // Impresora térmica (QZ Tray / ESC/POS)
+        $metodo = sanitize_key( wp_unslash( $_POST['gpi_print_metodo'] ?? 'navegador' ) );
+        $codif  = sanitize_key( wp_unslash( $_POST['gpi_qz_codificacion'] ?? 'cp858' ) );
+        $cp     = trim( sanitize_text_field( wp_unslash( $_POST['gpi_qz_codepage'] ?? '' ) ) );
+        update_option( 'gpi_print_metodo',    in_array( $metodo, [ 'qz', 'navegador' ], true ) ? $metodo : 'navegador' );
+        update_option( 'gpi_qz_impresora',    sanitize_text_field( wp_unslash( $_POST['gpi_qz_impresora'] ?? '' ) ) );
+        // Vacío = automático según el ancho del papel.
+        $cols = absint( $_POST['gpi_qz_columnas'] ?? 0 );
+        update_option( 'gpi_qz_columnas',     $cols ? (string) min( 64, max( 16, $cols ) ) : '' );
+        update_option( 'gpi_qz_codificacion', in_array( $codif, [ 'cp858', 'cp850', 'cp1252' ], true ) ? $codif : 'cp858' );
+        update_option( 'gpi_qz_codepage',     '' === $cp ? '' : (string) min( 255, absint( $cp ) ) );
+        update_option( 'gpi_qz_cajon',        isset( $_POST['gpi_qz_cajon'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_copias',       min( 10, max( 1, absint( $_POST['gpi_qz_copias'] ?? 1 ) ) ) );
+        update_option( 'gpi_qz_auto',         isset( $_POST['gpi_qz_auto'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_barcode',      isset( $_POST['gpi_qz_barcode'] ) ? '1' : '0' );
+        update_option( 'gpi_qz_iva',          min( 100, max( 0, floatval( str_replace( ',', '.', wp_unslash( $_POST['gpi_qz_iva'] ?? '0' ) ) ) ) ) );
+        update_option( 'gpi_ticket_comercio', sanitize_text_field( wp_unslash( $_POST['gpi_ticket_comercio'] ?? '' ) ) );
+        update_option( 'gpi_ticket_cabecera', sanitize_textarea_field( wp_unslash( $_POST['gpi_ticket_cabecera'] ?? '' ) ) );
+        update_option( 'gpi_ticket_pie',      sanitize_textarea_field( wp_unslash( $_POST['gpi_ticket_pie'] ?? '' ) ) );
         wp_redirect( admin_url( 'admin.php?page=gpi-ajustes&updated=1' ) );
+        exit;
+    }
+
+    // ── CERTIFICADO QZ TRAY ───────────────────────────────────────────────
+    // Gestionar la clave privada es más delicado que el resto de ajustes:
+    // solo administradores (manage_options).
+
+    public function save_qz_cert() {
+        check_admin_referer( 'gpi_qz_cert' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Sin permiso.' );
+
+        $op     = sanitize_key( wp_unslash( $_POST['op'] ?? '' ) );
+        $result = 'cert_error';
+        $error  = '';
+
+        if ( 'generar' === $op ) {
+            $par = self::generar_qz_cert();
+            if ( is_wp_error( $par ) ) {
+                $error = $par->get_error_message();
+            } else {
+                self::store_qz_cert( $par['cert'], $par['key'] );
+                $result = 'cert_generado';
+            }
+        } elseif ( 'guardar' === $op ) {
+            // PEM: se conserva tal cual (sanitize_textarea_field rompería el formato).
+            $cert = trim( (string) wp_unslash( $_POST['gpi_qz_cert'] ?? '' ) );
+            $key  = trim( (string) wp_unslash( $_POST['gpi_qz_key'] ?? '' ) );
+            if ( ! $key ) {
+                $key = (string) get_option( 'gpi_qz_key', '' ); // solo se cambia el certificado
+            }
+            if ( ! function_exists( 'openssl_x509_read' ) ) {
+                $error = 'La extensión OpenSSL de PHP no está disponible en el servidor.';
+            } elseif ( ! preg_match( '/^-----BEGIN CERTIFICATE-----/', $cert ) || ! @openssl_x509_read( $cert ) ) {
+                $error = 'El certificado no es un PEM válido (debe empezar por -----BEGIN CERTIFICATE-----).';
+            } elseif ( ! @openssl_pkey_get_private( $key ) ) {
+                $error = 'La clave privada no es válida o está protegida con contraseña (debe ser PEM sin cifrar).';
+            } elseif ( ! openssl_x509_check_private_key( $cert, $key ) ) {
+                $error = 'La clave privada no corresponde a este certificado.';
+            } else {
+                self::store_qz_cert( $cert . "\n", $key . "\n" );
+                $result = 'cert_guardado';
+            }
+        } elseif ( 'borrar' === $op ) {
+            delete_option( 'gpi_qz_cert' );
+            delete_option( 'gpi_qz_key' );
+            $result = 'cert_borrado';
+        }
+
+        $args = [ 'page' => 'gpi-ajustes', 'gpi_msg' => $result ];
+        if ( $error ) {
+            set_transient( 'gpi_qz_cert_error_' . get_current_user_id(), $error, 60 );
+        }
+        wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) . '#gpi-certificado' );
+        exit;
+    }
+
+    /** Guarda certificado y clave sin autoload (no se cargan en cada petición). */
+    private static function store_qz_cert( $cert, $key ) {
+        delete_option( 'gpi_qz_cert' );
+        delete_option( 'gpi_qz_key' );
+        add_option( 'gpi_qz_cert', $cert, '', 'no' );
+        add_option( 'gpi_qz_key', $key, '', 'no' );
+    }
+
+    /** Descarga el certificado público para instalarlo en QZ Tray (override.crt). */
+    public function download_qz_cert() {
+        check_admin_referer( 'gpi_qz_descargar_cert' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Sin permiso.' );
+        $cred = self::get_qz_credentials();
+        if ( ! $cred['cert'] ) wp_die( 'No hay certificado configurado.' );
+        nocache_headers();
+        header( 'Content-Type: application/x-x509-ca-cert' );
+        header( 'Content-Disposition: attachment; filename="override.crt"' );
+        echo $cred['cert']; // phpcs:ignore WordPress.Security.EscapeOutput -- PEM en descarga
         exit;
     }
 }

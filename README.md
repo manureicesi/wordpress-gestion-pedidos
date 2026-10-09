@@ -19,6 +19,7 @@ PLUGIN=gestion-pedidos-internos && DEST="$(pwd)/${PLUGIN}.zip" && zip -r "$DEST"
 - **Historial de estados** con fecha, usuario y nota
 - **Resguardo de ticket térmico** optimizado para impresoras de 58mm / 80mm / 112mm
 - **QR en el resguardo** con enlace a la página de seguimiento
+- **Impresión ESC/POS directa con QZ Tray** (acentos, columnas, QR, código de barras, corte, cajón), con página de prueba y fallback al diálogo del navegador
 - **Shortcode `[gpi_estado_pedido]`** para consulta pública por número de pedido
 - **Filtros y búsqueda** en el panel de administración
 
@@ -169,4 +170,33 @@ gestion-pedidos-internos/
     │   └── public.css             # Estilos del shortcode
     └── js/
         └── admin.js               # AJAX del panel (jQuery)
+```
+
+---
+
+## Impresión directa con QZ Tray
+
+1. Instala y abre [QZ Tray](https://qz.io/download/) en el PC con la impresora térmica.
+2. **Pedidos → Ajustes → Impresora térmica**: método «QZ Tray», pulsa **Detectar impresoras** y elige la tuya.
+3. Pulsa **Imprimir página de prueba** y ajusta columnas y codificación hasta que la regla y los acentos salgan bien. Después, **Guardar ajustes**.
+
+El campo **Caracteres por línea** no es el tamaño del ticket: es cuántas letras caben en una línea.
+Si se deja vacío se calcula a partir del **Ancho del papel** (58 mm → 32, 80 mm → 42, 112 mm → 64).
+
+### Certificado (evitar el aviso «Allow» de QZ Tray)
+
+Sin certificado, QZ Tray pedirá permiso en cada conexión. En **Ajustes → Certificado QZ Tray** (solo administradores):
+
+1. **Generar certificado nuevo** (RSA 2048, autofirmado, 10 años).
+2. **Descargar certificado** en el PC de la impresora y copiarlo como `override.crt` en la carpeta de QZ Tray
+   (Windows: `C:\Program Files\QZ Tray\override.crt`). Reiniciar QZ Tray.
+3. En el primer aviso marcar *Remember this decision* → *Allow*.
+
+También se puede pegar un certificado propio (p. ej. comprado a QZ Industries) o, para no guardar la clave en la base de datos,
+definir ficheros fuera del directorio público en `wp-config.php` (tienen prioridad):
+
+```php
+define( 'GPI_QZ_CERT_FILE', '/ruta/segura/digital-certificate.txt' );
+define( 'GPI_QZ_KEY_FILE',  '/ruta/segura/private-key.pem' );
+// define( 'GPI_QZ_KEY_PASS', 'contraseña' ); // si la clave está cifrada
 ```
